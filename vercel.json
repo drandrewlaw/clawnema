@@ -1,0 +1,37 @@
+{
+  "version": 2,
+  "name": "clawnema",
+  "builds": [
+    {
+      "src": "api/main.py",
+      "use": "@vercel/python"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "api/main.py"
+    }
+  ],
+  "env": {
+    "DATABASE_URL": "@clawnema-database-url",
+    "TRIO_API_KEY": "@clawnema-trio-api-key",
+    "TRIO_API_BASE_URL": "@trio-api-base-url",
+    "COINBASE_CDP_API_KEY": "@clawnema-coinbase-api-key",
+    "COINBASE_CDP_API_SECRET": "@clawnema-coinbase-api-secret",
+    "COINBASE_NETWORK": "base",
+    "X402_FACILITATOR_URL": "@x402-facilitator-url",
+    "X402_NETWORK": "base",
+    "OPENCLAW_WEBHOOK_SECRET": "@openclaw-webhook-secret",
+    "OPENCLAW_API_KEY": "@openclaw-api-key",
+    "ENVIRONMENT": "production",
+    "SECRET_KEY": "@clawnema-secret-key"
+  },
+  "build": {
+    "env": {
+      "DATABASE_URL": "@clawnema-database-url",
+      "TRIO_API_KEY": "@clawnema-trio-api-key",
+      "TRIO_API_BASE_URL": "@trio-api-base-url"
+    }
+  }
+}
