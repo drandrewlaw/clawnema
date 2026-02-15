@@ -15,39 +15,39 @@ export interface Theater {
 
 export const DEFAULT_THEATERS: Theater[] = [
   {
-    id: 'nature-live-1',
-    title: 'Planet Earth: Live Cam',
-    stream_url: 'https://www.youtube.com/watch?v=-xKOLW6LkRw', // EarthCam Times Square
-    ticket_price_usdc: 0.50,
-    description: 'Experience the hustle and bustle of NYC\'s Times Square in real-time.'
-  },
-  {
-    id: 'aquarium-live-1',
-    title: 'Monterey Bay Aquarium: Live',
-    stream_url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ', // Replace with actual aquarium stream
+    id: 'seoul-drone-show',
+    title: 'Seoul K-POP Drone Show Live',
+    stream_url: 'https://www.youtube.com/watch?v=EByF2FWUoow',
     ticket_price_usdc: 1.00,
-    description: 'Dive into the underwater world of marine life.'
+    description: 'Watch the spectacular K-POP Demon Hunters drone show live from Seoul, South Korea.'
   },
   {
-    id: 'space-live-1',
-    title: 'NASA Live: Earth from Space',
-    stream_url: 'https://www.youtube.com/watch?v=xRPjKQtMKTg', // NASA Live
+    id: 'jazz-cafe',
+    title: 'Spring Jazz at Lakeside Café',
+    stream_url: 'https://www.youtube.com/watch?v=UZiKR5HHXTo',
+    ticket_price_usdc: 0.50,
+    description: 'Relax with soothing spring jazz music at a tranquil lakeside café ambience.'
+  },
+  {
+    id: 'kenya-wildlife',
+    title: 'Kenya Wildlife Safari Live',
+    stream_url: 'https://www.youtube.com/watch?v=XsOU8JnEpNM',
     ticket_price_usdc: 2.00,
-    description: 'Watch our beautiful planet float through the cosmos from the ISS.'
+    description: 'Live wildlife cam from ol Donyo Lodge in the Chyulu Hills between Tsavo and Amboseli, Kenya.'
   },
   {
-    id: 'jazz-live-1',
-    title: 'Jazz Lounge: Live Sessions',
-    stream_url: 'https://www.youtube.com/watch?v=neV3EPgvZ3g', // Jazz stream
-    ticket_price_usdc: 1.50,
-    description: 'Smooth jazz performances live from the heart of New Orleans.'
+    id: 'times-square-4k',
+    title: 'EarthCam: Times Square 4K',
+    stream_url: 'https://www.youtube.com/watch?v=rnXIjl_Rzy4',
+    ticket_price_usdc: 0.50,
+    description: 'Aerial 4K live view of the most visited spot in New York City — Times Square.'
   },
   {
-    id: 'northern-lights-1',
-    title: 'Aurora Borealis Live',
-    stream_url: 'https://www.youtube.com/watch?v=44Xz44eN5OI', // Aurora stream
-    ticket_price_usdc: 3.00,
-    description: 'Witness the magical dance of the Northern Lights in real-time.'
+    id: 'fresno-traffic-cam',
+    title: 'Traffic Cam: Fresno, California',
+    stream_url: 'https://www.youtube.com/watch?v=1xl0hX-nF2E',
+    ticket_price_usdc: 0.50,
+    description: 'Live traffic camera at Friant & Shepherd intersection in Fresno, CA — with police scanner audio.'
   }
 ];
 
@@ -55,9 +55,20 @@ export const DEFAULT_THEATERS: Theater[] = [
  * Initialize theaters in the database
  */
 export async function seedTheaters(db: any): Promise<void> {
+  // Clear old theaters and re-seed with current config
+  const currentIds = new Set(DEFAULT_THEATERS.map(t => t.id));
   const existingTheaters = db.theaters.getAll();
-  const existingIds = new Set(existingTheaters.map((t: any) => t.id));
 
+  // Remove theaters that are no longer in the config
+  for (const existing of existingTheaters) {
+    if (!currentIds.has(existing.id)) {
+      db.theaters.delete(existing.id);
+      console.log(`Removed old theater: ${existing.id}`);
+    }
+  }
+
+  // Insert or update current theaters
+  const existingIds = new Set(existingTheaters.map((t: any) => t.id));
   for (const theater of DEFAULT_THEATERS) {
     if (!existingIds.has(theater.id)) {
       db.theaters.create(theater);
