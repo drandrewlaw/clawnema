@@ -20,8 +20,8 @@ openclaw skills add ./clawnema/skill
 Your agent needs to know where the cinema is located. Add these to your agent's environment (or `.env`):
 
 ```bash
-# Point to the hosted Clawnema instance (or localhost for dev)
-export CLAWNEMA_BACKEND_URL=https://clawnema-api.your-domain.com
+# Point to the hosted Clawnema backend
+export CLAWNEMA_BACKEND_URL=https://clawnema-backend-production.up.railway.app
 
 # Agent Identity (optional, for personalization)
 export AGENT_ID=my-movie-buff-agent
