@@ -114,63 +114,53 @@ app.post('/buy-ticket', async (req: Request, res: Response) => {
       });
     }
 
-    // Verify transaction on Base
-    const tx = await publicClient.getTransaction({ hash: tx_hash as Address });
-    if (!tx) {
-      return res.status(400).json({
-        success: false,
-        error: 'Transaction not found on Base network'
-      });
-    }
+    // SIMULATED PAYMENT FOR DEMO
+    // If enabled, allow tx_hash starting with 'dev_' to bypass on-chain check
+    if (process.env.ALLOW_SIMULATED_PAYMENTS === 'true' && tx_hash.startsWith('dev_')) {
+      console.log(`[DEMO] Skipping on-chain verification for ${tx_hash}`);
+      // Skip the rest of the verification and proceed to ticket creation
+    } else {
+      // Verify transaction on Base
+      const tx = await publicClient.getTransaction({ hash: tx_hash as Address });
+      if (!tx) {
+        return res.status(400).json({
+          success: false,
+          error: 'Transaction not found on Base network'
+        });
+      }
 
-    // For USDC transfer on Base, check if it's a transfer to our wallet
-    let transferredAmount = 0n;
-    let transferToOurWallet = false;
+      // For USDC transfer on Base, check if it's a transfer to our wallet
+      let transferredAmount = 0n;
+      let transferToOurWallet = false;
 
-    if (tx.to?.toLowerCase() === USDC_CONTRACT_ADDRESS.toLowerCase()) {
-      // Direct USDC transfer via contract
-      try {
-        const receipt = await publicClient.getTransactionReceipt({ hash: tx_hash as Address });
-        if (receipt && receipt.status === 'success') {
-          // Parse transfer logs to verify amount and recipient
-          for (const log of receipt.logs) {
-            if (log.address.toLowerCase() === USDC_CONTRACT_ADDRESS.toLowerCase()) {
-              // Check if this is a Transfer event to our wallet
-              // Simplified: we'll check the transaction input for the transfer call
-            }
+      // ... (rest of logic) ...
+
+      if (tx.to?.toLowerCase() === USDC_CONTRACT_ADDRESS.toLowerCase()) {
+        // ... existing check ...
+        if (tx.input.startsWith('0xa9059cbb')) {
+          const toAddress = '0x' + tx.input.slice(34, 74);
+          const amountHex = '0x' + tx.input.slice(74, 138);
+          const amount = BigInt(amountHex);
+
+          if (toAddress.toLowerCase() === CLAWNEMA_WALLET.toLowerCase()) {
+            transferToOurWallet = true;
+            transferredAmount = amount;
           }
         }
-      } catch (e) {
-        // Fall through to amount check
+      } else if (tx.to?.toLowerCase() === CLAWNEMA_WALLET.toLowerCase()) {
+        transferToOurWallet = true;
+        transferredAmount = tx.value;
       }
 
-      // Decode the transfer call data to verify amount and recipient
-      // transfer(address,uint256) = 0xa9059cbb
-      if (tx.input.startsWith('0xa9059cbb')) {
-        const toAddress = '0x' + tx.input.slice(34, 74);
-        const amountHex = '0x' + tx.input.slice(74, 138);
-        const amount = BigInt(amountHex);
+      // Convert price to smallest unit for comparison (USDC 6 decimals)
+      const expectedAmount = parseUnits(theater.ticket_price_usdc.toString(), 6);
 
-        if (toAddress.toLowerCase() === CLAWNEMA_WALLET.toLowerCase()) {
-          transferToOurWallet = true;
-          transferredAmount = amount;
-        }
+      if (!transferToOurWallet || transferredAmount < expectedAmount) {
+        return res.status(400).json({
+          success: false,
+          error: `Invalid payment. Expected ${theater.ticket_price_usdc} USDC sent to ${CLAWNEMA_WALLET}`
+        });
       }
-    } else if (tx.to?.toLowerCase() === CLAWNEMA_WALLET.toLowerCase()) {
-      // Direct ETH/Base transfer (not recommended but we'll accept it)
-      transferToOurWallet = true;
-      transferredAmount = tx.value;
-    }
-
-    // Convert price to smallest unit for comparison
-    // USDC has 6 decimals
-    const expectedAmount = parseUnits(theater.ticket_price_usdc.toString(), 6);
-
-    if (!transferToOurWallet || transferredAmount < expectedAmount) {
-      return res.status(400).json({
-        success: false,
-        error: `Invalid payment. Expected ${theater.ticket_price_usdc} USDC sent to ${CLAWNEMA_WALLET}`
-      });
     }
 
     // Generate session token
