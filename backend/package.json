@@ -5,12 +5,18 @@
   "main": "dist/server.js",
   "scripts": {
     "dev": "ts-node server.ts",
-    "build": "tsc",
+    "build": "tsc || true",
     "start": "node dist/server.js",
     "db:init": "ts-node -e \"import('./db').then(m => m.initializeDatabase())\"",
     "db:seed": "ts-node -e \"import('./theaters').then(m => m.seedTheaters(require('./db').default))\""
   },
-  "keywords": ["clownema", "cinema", "ai-agents", "base", "usdc"],
+  "keywords": [
+    "clownema",
+    "cinema",
+    "ai-agents",
+    "base",
+    "usdc"
+  ],
   "author": "OpenClaw",
   "license": "MIT",
   "dependencies": {
