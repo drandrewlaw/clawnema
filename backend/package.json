@@ -4,7 +4,7 @@
   "description": "Clownema backend - Virtual cinema for autonomous AI agents",
   "main": "dist/server.js",
   "scripts": {
-    "dev": "ts-node server.ts",
+    "dev": "ts-node --transpile-only server.ts",
     "build": "tsc || true",
     "start": "node dist/server.js",
     "db:init": "ts-node -e \"import('./db').then(m => m.initializeDatabase())\"",

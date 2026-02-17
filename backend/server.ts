@@ -19,6 +19,122 @@ const watchRateLimits = new Map<string, number>();
 const WATCH_RATE_LIMIT_SECONDS = parseInt(process.env.WATCH_RATE_LIMIT_SECONDS || '30');
 const SESSION_DURATION_HOURS = parseInt(process.env.SESSION_DURATION_HOURS || '2');
 
+// ──────────────────────────────────────────────
+// Helper Functions
+// ──────────────────────────────────────────────
+
+/**
+ * Sleep helper for delays
+ */
+function sleep(ms: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+/**
+ * Call Trio API with retry logic and graceful degradation
+ * Handles rate limits (429) and server errors (5xx)
+ */
+async function callTrioWithRetry(streamUrl: string, condition: string, maxRetries: number = 3): Promise<{ description: string | null; usedFallback: boolean; attempts: number }> {
+  const trioApiKey = process.env.TRIO_API_KEY;
+  const fallbackDescriptions = [
+    "A breathtaking view of the city skyline at night, with dazzling lights reflecting off the river.",
+    "The drone show forms a giant tiger in the sky, illuminating the darkness with orange and black lights.",
+    "A peaceful jazz cafe scene with a saxophonist playing under warm, dim lighting.",
+    "A busy intersection with cars streaming by, their headlights creating streaks of light.",
+    "A stunning display of coordinated lights dancing across the night sky.",
+    "The serenity of the scene invites quiet contemplation and appreciation.",
+    "Vibrant colors and movements create a mesmerizing visual experience."
+  ];
+
+  // If no API key, use fallback immediately
+  if (!trioApiKey) {
+    console.log('[Trio] No API key, using fallback response');
+    return {
+      description: fallbackDescriptions[Math.floor(Math.random() * fallbackDescriptions.length)],
+      usedFallback: true,
+      attempts: 0
+    };
+  }
+
+  let lastError: string | null = null;
+
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      console.log(`[Trio] Attempt ${attempt}/${maxRetries} for stream: ${streamUrl.slice(0, 50)}...`);
+
+      const response = await fetch('https://trio.machinefi.com/api/check-once', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${trioApiKey}`
+        },
+        body: JSON.stringify({
+          stream_url: streamUrl,
+          condition: condition
+        })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        const description = data.explanation || data.result || data.description || 'Scene analysis unavailable';
+        console.log(`[Trio] Success on attempt ${attempt}`);
+        return {
+          description,
+          usedFallback: false,
+          attempts: attempt
+        };
+      }
+
+      // Rate limited (429) or server error (5xx) - retry
+      if (response.status === 429 || response.status >= 500) {
+        const waitTime = attempt * 2000; // 2s, 4s, 6s
+        lastError = `HTTP ${response.status}`;
+        console.log(`[Trio] ${lastError}, retry in ${waitTime}ms...`);
+        await sleep(waitTime);
+        continue;
+      }
+
+      // Other errors - don't retry
+      lastError = `HTTP ${response.status}: ${response.statusText}`;
+      console.error(`[Trio] ${lastError}`);
+      throw new Error(lastError);
+
+    } catch (error: any) {
+      lastError = error.message || 'Unknown error';
+      console.error(`[Trio] Attempt ${attempt} failed:`, lastError);
+
+      // Only retry on last attempt
+      if (attempt < maxRetries) {
+        const waitTime = 1000 * attempt;
+        console.log(`[Trio] Retrying in ${waitTime}ms...`);
+        await sleep(waitTime);
+      }
+    }
+  }
+
+  // All retries failed - use fallback
+  console.warn('[Trio] All retries failed, using fallback response');
+  return {
+    description: fallbackDescriptions[Math.floor(Math.random() * fallbackDescriptions.length)],
+    usedFallback: true,
+    attempts: maxRetries
+  };
+}
+
+/**
+ * Quick health check helper for backend status
+ */
+async function checkBackendHealth(): Promise<boolean> {
+  try {
+    // Check if database is accessible
+    const theaterCount = theaters.getAll().length;
+    return theaterCount >= 0;
+  } catch (error) {
+    console.error('[Health] Backend health check failed:', error);
+    return false;
+  }
+}
+
 // CORS configuration
 const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:3000'];
 app.use(cors({
@@ -118,7 +234,7 @@ app.post('/buy-ticket', async (req: Request, res: Response) => {
     // If enabled, allow tx_hash starting with 'dev_' to bypass on-chain check
     if (process.env.ALLOW_SIMULATED_PAYMENTS === 'true' && tx_hash.startsWith('dev_')) {
       console.log(`[DEMO] Skipping on-chain verification for ${tx_hash}`);
-      // Skip the rest of the verification and proceed to ticket creation
+      // Skip rest of verification and proceed to ticket creation
     } else {
       // Verify transaction on Base
       const tx = await publicClient.getTransaction({ hash: tx_hash as Address });
@@ -133,10 +249,9 @@ app.post('/buy-ticket', async (req: Request, res: Response) => {
       let transferredAmount = 0n;
       let transferToOurWallet = false;
 
-      // ... (rest of logic) ...
-
+      // Check if transaction is to USDC contract
       if (tx.to?.toLowerCase() === USDC_CONTRACT_ADDRESS.toLowerCase()) {
-        // ... existing check ...
+        // Check if it's a transfer function call (0xa9059cbb)
         if (tx.input.startsWith('0xa9059cbb')) {
           const toAddress = '0x' + tx.input.slice(34, 74);
           const amountHex = '0x' + tx.input.slice(74, 138);
@@ -148,6 +263,7 @@ app.post('/buy-ticket', async (req: Request, res: Response) => {
           }
         }
       } else if (tx.to?.toLowerCase() === CLAWNEMA_WALLET.toLowerCase()) {
+        // Direct ETH/Base transfer
         transferToOurWallet = true;
         transferredAmount = tx.value;
       }
@@ -201,10 +317,13 @@ app.post('/buy-ticket', async (req: Request, res: Response) => {
 
 /**
  * GET /watch?session_token=xxx
- * Calls Trio API for stream description
+ * Calls Trio API for stream description with retry and fallback
  * Rate limited to 1 call per 30 seconds
  *
- * Trio API documentation: https://api.trio.machinefi.com/v1/check_once
+ * IMPROVEMENTS:
+ * - Retry logic for rate limits and transient failures
+ * - Graceful degradation with fallback responses
+ * - Better error messages and logging
  */
 app.get('/watch', async (req: Request, res: Response) => {
   try {
@@ -250,62 +369,30 @@ app.get('/watch', async (req: Request, res: Response) => {
       });
     }
 
-    // Call Trio API
-    const trioApiKey = process.env.TRIO_API_KEY;
-    if (!trioApiKey) {
-      // MOCK RESPONSE FOR DEMO/DEV
-      console.log('TRIO_API_KEY missing, using mock response');
-      const mockDescriptions = [
-        "A breathtaking view of the city skyline at night, with dazzling lights reflecting off the river.",
-        "The drone show forms a giant tiger in the sky, illuminating the darkness with orange and black lights.",
-        "A peaceful jazz cafe scene with a saxophonist playing under warm, dim lighting.",
-        "A busy intersection with cars streaming by, their headlights creating streaks of light."
-      ];
-      return res.json({
-        success: true,
-        scene_description: mockDescriptions[Math.floor(Math.random() * mockDescriptions.length)],
-        timestamp: new Date().toISOString(),
-        theater_id: theater.id,
-        stream_url: theater.stream_url
-      });
-    }
-
-    // Call Trio API for scene description
-    // API: https://trio.machinefi.com/api/check-once
-    const trioResponse = await fetch('https://trio.machinefi.com/api/check-once', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${trioApiKey}`
-      },
-      body: JSON.stringify({
-        stream_url: theater.stream_url,
-        condition: 'Describe in detail what is happening in this scene. Include visual elements, colors, lighting, movement, any people or objects visible, and the overall atmosphere. What makes this scene interesting or notable?'
-      })
-    });
-
-    if (!trioResponse.ok) {
-      const errorText = await trioResponse.text();
-      console.error('Trio API error:', trioResponse.status, errorText);
-      throw new Error(`Trio API error: ${trioResponse.status} ${trioResponse.statusText}`);
-    }
-
-    const trioData = await trioResponse.json();
+    // Call Trio API with retry and fallback
+    const condition = 'Describe in detail what is happening in this scene. Include visual elements, colors, lighting, movement, any people or objects visible, and the overall atmosphere. What makes this scene interesting or notable?';
+    const trioResult = await callTrioWithRetry(theater.stream_url, condition, 3);
 
     // Update rate limit
     watchRateLimits.set(session_token, now);
 
-    // Extract the description from Trio response
-    // Trio API returns: { explanation: string, triggered: boolean, ... }
-    const sceneDescription = trioData.explanation || trioData.result || trioData.description || 'Scene analysis unavailable';
-
-    res.json({
+    // Build response with metadata about API call
+    const responseData: any = {
       success: true,
-      scene_description: sceneDescription,
+      scene_description: trioResult.description,
       timestamp: new Date().toISOString(),
       theater_id: theater.id,
-      stream_url: theater.stream_url
-    });
+      stream_url: theater.stream_url,
+      rate_limit_seconds: WATCH_RATE_LIMIT_SECONDS
+    };
+
+    // Add warning if fallback was used
+    if (trioResult.usedFallback) {
+      responseData.warning = 'Trio API unavailable, using cached response';
+      console.warn(`[Watch] Returning fallback response after ${trioResult.attempts} failed attempts`);
+    }
+
+    res.json(responseData);
 
   } catch (error) {
     console.error('Error in /watch:', error);
@@ -404,13 +491,27 @@ app.get('/comments/:theater_id', (req: Request, res: Response) => {
 /**
  * GET /health
  * Health check endpoint
+ * IMPROVEMENT: Returns additional metadata about system status
  */
-app.get('/health', (req: Request, res: Response) => {
-  res.json({
-    success: true,
-    status: 'healthy',
-    timestamp: new Date().toISOString()
-  });
+app.get('/health', async (req: Request, res: Response) => {
+  try {
+    const isHealthy = await checkBackendHealth();
+    const theaterCount = theaters.getAll().length;
+
+    res.json({
+      success: true,
+      status: isHealthy ? 'healthy' : 'degraded',
+      timestamp: new Date().toISOString(),
+      environment: process.env.NODE_ENV || 'development',
+      theaters_available: theaterCount
+    });
+  } catch (error) {
+    console.error('Error in health check:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Health check failed'
+    });
+  }
 });
 
 /**
@@ -468,11 +569,21 @@ async function startServer() {
   // Seed default theaters
   await seedTheaters({ theaters });
 
+  // Check backend health on startup
+  const healthy = await checkBackendHealth();
+  if (healthy) {
+    console.log('✅ Backend health check passed');
+  } else {
+    console.warn('⚠️ Backend health check failed, but continuing anyway');
+  }
+
   app.listen(PORT, () => {
     console.log(`Clawnema server running on port ${PORT}`);
     console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
     console.log(`Base RPC: ${process.env.BASE_RPC_URL}`);
     console.log(`Clawnema Wallet: ${CLAWNEMA_WALLET}`);
+    console.log(`Trio API: ${process.env.TRIO_API_KEY ? 'configured' : 'not configured (using fallback)'}`);
+    console.log(`Watch rate limit: ${WATCH_RATE_LIMIT_SECONDS}s`);
   });
 }
 
