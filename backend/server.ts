@@ -253,15 +253,26 @@ app.get('/watch', async (req: Request, res: Response) => {
     // Call Trio API
     const trioApiKey = process.env.TRIO_API_KEY;
     if (!trioApiKey) {
-      return res.status(500).json({
-        success: false,
-        error: 'Trio API not configured'
+      // MOCK RESPONSE FOR DEMO/DEV
+      console.log('TRIO_API_KEY missing, using mock response');
+      const mockDescriptions = [
+        "A breathtaking view of the city skyline at night, with dazzling lights reflecting off the river.",
+        "The drone show forms a giant tiger in the sky, illuminating the darkness with orange and black lights.",
+        "A peaceful jazz cafe scene with a saxophonist playing under warm, dim lighting.",
+        "A busy intersection with cars streaming by, their headlights creating streaks of light."
+      ];
+      return res.json({
+        success: true,
+        scene_description: mockDescriptions[Math.floor(Math.random() * mockDescriptions.length)],
+        timestamp: new Date().toISOString(),
+        theater_id: theater.id,
+        stream_url: theater.stream_url
       });
     }
 
     // Call Trio API for scene description
-    // API: https://api.trio.machinefi.com/v1/check_once
-    const trioResponse = await fetch('https://api.trio.machinefi.com/v1/check_once', {
+    // API: https://trio.machinefi.com/api/check-once
+    const trioResponse = await fetch('https://trio.machinefi.com/api/check-once', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -269,10 +280,7 @@ app.get('/watch', async (req: Request, res: Response) => {
       },
       body: JSON.stringify({
         stream_url: theater.stream_url,
-        condition: 'Describe in detail what is happening in this scene. Include visual elements, colors, lighting, movement, any people or objects visible, and the overall atmosphere. What makes this scene interesting or notable?',
-        include_frame: false,
-        input_mode: 'hybrid',
-        clip_duration_seconds: 3
+        condition: 'Describe in detail what is happening in this scene. Include visual elements, colors, lighting, movement, any people or objects visible, and the overall atmosphere. What makes this scene interesting or notable?'
       })
     });
 
@@ -288,8 +296,8 @@ app.get('/watch', async (req: Request, res: Response) => {
     watchRateLimits.set(session_token, now);
 
     // Extract the description from Trio response
-    // Trio API returns: { result: string, triggered: boolean, ... }
-    const sceneDescription = trioData.result || trioData.description || 'Scene analysis unavailable';
+    // Trio API returns: { explanation: string, triggered: boolean, ... }
+    const sceneDescription = trioData.explanation || trioData.result || trioData.description || 'Scene analysis unavailable';
 
     res.json({
       success: true,

@@ -22,14 +22,14 @@ async function main() {
     console.log('');
     console.log('💳 STEP 2: Buying ticket for cheapest movie...');
     console.log('─────────────────────────────────────');
-    const ticket = await commands['buy-ticket']('nature-live-1');
+    const ticket = await commands['buy-ticket']('seoul-drone-show');
     console.log(ticket);
 
     // Step 3: Watch 2 scenes
     console.log('');
     console.log('👀 STEP 3: Watching scene 1...');
     console.log('─────────────────────────────────────');
-    const scene1 = await commands['watch']('nature-live-1');
+    const scene1 = await commands['watch']('seoul-drone-show');
     console.log(scene1);
 
     // Wait for rate limit
@@ -40,7 +40,7 @@ async function main() {
     console.log('');
     console.log('👀 STEP 4: Watching scene 2...');
     console.log('─────────────────────────────────────');
-    const scene2 = await commands['watch']('nature-live-1');
+    const scene2 = await commands['watch']('seoul-drone-show');
     console.log(scene2);
 
     // Step 5: Post a comment
@@ -48,7 +48,7 @@ async function main() {
     console.log('💬 STEP 5: Posting a comment...');
     console.log('─────────────────────────────────────');
     const comment = await commands['post-comment'](
-        'nature-live-1',
+        'seoul-drone-show',
         'The energy of this stream is incredible!',
         'excited'
     );
