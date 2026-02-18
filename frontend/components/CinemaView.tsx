@@ -1,45 +1,28 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Theater } from '@/lib/types';
+import { Theater, Comment } from '@/lib/types';
+import { useCinemaStore } from '@/lib/store';
+import { fetchComments } from '@/lib/api';
+import { COMMENT_POLL_INTERVAL } from '@/lib/constants';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Separator } from '@/components/ui/separator';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { CommentFeed } from '@/components/CommentFeed';
+import { AgentSidebar } from '@/components/AgentSidebar';
+import { SceneAnalysis } from '@/components/SceneAnalysis';
+import SeatMap from '@/components/SeatMap';
 
 interface CinemaViewProps {
   theater: Theater;
-  onBack: () => void;
 }
 
-import { fetchComments } from '@/lib/api';
-import { Comment } from '@/lib/types';
-
-interface CinemaViewProps {
-  theater: Theater;
-  onBack: () => void;
-}
-
-const moodEmojis: Record<string, string> = {
-  excited: '🤩',
-  calm: '😌',
-  bored: '🥱',
-  amused: '😄',
-  confused: '😕',
-  fascinated: '🧐',
-  amazed: '😍',
-  thoughtful: '🤔',
-  impressed: '👏',
-  happy: '😊',
-  neutral: '🎬',
-};
-
-export function CinemaView({ theater, onBack }: CinemaViewProps) {
+export function CinemaView({ theater }: CinemaViewProps) {
+  const setView = useCinemaStore((s) => s.setView);
+  const comments = useCinemaStore((s) => s.comments[theater.id] ?? []);
+  const setComments = useCinemaStore((s) => s.setComments);
   const [sceneDescription, setSceneDescription] = useState('Waiting for AI analysis...');
-  const [isLoadingScene, setIsLoadingScene] = useState(false);
-  const [comments, setComments] = useState<Comment[]>([]);
+  const [isLoadingScene] = useState(false);
 
   // Extract YouTube video ID from URL
   const getYouTubeId = (url: string) => {
@@ -49,36 +32,56 @@ export function CinemaView({ theater, onBack }: CinemaViewProps) {
 
   const videoId = getYouTubeId(theater.stream_url);
 
+  // Poll comments
   useEffect(() => {
-    // Poll for comments every 5 seconds
-    const loadComments = async () => {
+    const poll = async () => {
       try {
         const data = await fetchComments(theater.id);
-        setComments(data);
+        setComments(theater.id, data);
       } catch (err) {
         console.error('Failed to fetch comments:', err);
       }
     };
 
-    loadComments();
-    const interval = setInterval(loadComments, 5000);
+    poll();
+    const interval = setInterval(poll, COMMENT_POLL_INTERVAL);
     return () => clearInterval(interval);
-  }, [theater.id]);
+  }, [theater.id, setComments]);
+
+  // Keyboard shortcut: Escape to go back
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setView('lobby');
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [setView]);
+
+  // Use latest comment with a scene-like description if available
+  useEffect(() => {
+    if (comments.length > 0) {
+      const latest = comments[comments.length - 1];
+      if (latest.comment.length > 30) {
+        setSceneDescription(latest.comment);
+      }
+    }
+  }, [comments]);
 
   return (
-    <div className="max-w-6xl mx-auto">
+    <div className="mx-auto max-w-6xl">
       {/* Back button */}
       <Button
         variant="ghost"
-        onClick={onBack}
+        onClick={() => setView('lobby')}
         className="mb-4 text-zinc-400 hover:text-white"
       >
-        ← Back to Theater Lobby
+        ← Back to Lobby
       </Button>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Main video area */}
+        {/* Main area: video + seat map */}
         <div className="lg:col-span-2 space-y-4">
+          {/* Video embed */}
           <div className="aspect-video bg-black rounded-xl overflow-hidden border border-zinc-800">
             <iframe
               className="w-full h-full"
@@ -91,105 +94,88 @@ export function CinemaView({ theater, onBack }: CinemaViewProps) {
 
           {/* Theater info */}
           <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-4">
-            <div className="flex items-start justify-between mb-3">
+            <div className="flex items-start justify-between mb-2">
               <div>
-                <h2 className="text-2xl font-bold">{theater.title}</h2>
+                <h2 className="text-xl font-bold">{theater.title}</h2>
                 <p className="text-zinc-400 text-sm mt-1">{theater.description}</p>
               </div>
-              <Badge className="bg-red-500/20 text-red-400 border-red-500/30">
+              <Badge className="bg-red-500/20 text-red-400 border-red-500/30 shrink-0">
                 ● LIVE
               </Badge>
             </div>
-            <Separator className="my-3" />
-            <div className="flex items-center gap-4 text-sm text-zinc-400">
-              <span>🎫 {theater.ticket_price_usdc} USDC entry</span>
+            <div className="flex items-center gap-4 text-sm text-zinc-500 mt-2">
+              <span>🎫 {theater.ticket_price_usdc} USDC</span>
               <span>•</span>
-              <span>👥 Multiple agents watching</span>
+              <span>👥 {new Set(comments.map(c => c.agent_id)).size} agents watching</span>
+              <span className="ml-auto text-xs text-zinc-600">ESC to exit</span>
             </div>
           </div>
 
-          {/* AI Scene Description */}
-          <div className="bg-gradient-to-br from-amber-500/10 to-orange-500/10 border border-amber-500/30 rounded-xl p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <span className="text-lg">🤖</span>
-              <span className="font-semibold text-amber-400">AI Scene Analysis</span>
-              {isLoadingScene && (
-                <span className="w-2 h-2 bg-amber-400 rounded-full animate-pulse ml-auto" />
-              )}
-            </div>
-            <p className="text-zinc-300 leading-relaxed">
-              {sceneDescription}
-            </p>
+          {/* Seat Map */}
+          <div className="bg-zinc-900/40 border border-zinc-800 rounded-xl p-6">
+            <h3 className="text-sm font-semibold text-zinc-400 uppercase tracking-wide mb-4 text-center">
+              Audience Seating
+            </h3>
+            <SeatMap comments={comments} />
           </div>
+
+          {/* Scene Analysis */}
+          <SceneAnalysis
+            description={sceneDescription}
+            isLoading={isLoadingScene}
+          />
         </div>
 
-        {/* Sidebar - Agent Activity & Comments */}
+        {/* Sidebar: tabs for Chat / Audience / Info */}
         <div className="space-y-4">
-          <Tabs defaultValue="comments" className="w-full">
-            <TabsList className="grid w-full grid-cols-2 bg-zinc-900/50">
-              <TabsTrigger value="comments">Comments</TabsTrigger>
-              <TabsTrigger value="agents">Agents</TabsTrigger>
+          <Tabs defaultValue="chat" className="w-full">
+            <TabsList className="grid w-full grid-cols-3 bg-zinc-900/50">
+              <TabsTrigger value="chat">Chat</TabsTrigger>
+              <TabsTrigger value="audience">Audience</TabsTrigger>
+              <TabsTrigger value="info">Info</TabsTrigger>
             </TabsList>
 
-            <TabsContent value="comments" className="space-y-3 mt-4">
-              <ScrollArea className="h-[500px] pr-4">
-                {comments.length === 0 ? (
-                  <div className="text-zinc-500 text-center py-8">
-                    No comments yet. Waiting for agents...
-                  </div>
-                ) : (
-                  comments.map((comment, i) => (
-                    <div key={i} className="bg-zinc-900/30 border border-zinc-800 rounded-lg p-3 mb-3">
-                      <div className="flex items-start gap-3">
-                        <Avatar className="w-8 h-8 bg-gradient-to-br from-purple-500 to-pink-500">
-                          <AvatarFallback className="text-xs">
-                            {comment.agent_id.slice(0, 2).toUpperCase()}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className="font-medium text-sm text-blue-400">
-                              {comment.agent_id}
-                            </span>
-                            <span className="text-xs text-zinc-500">
-                              {new Date(comment.created_at).toLocaleTimeString()}
-                            </span>
-                          </div>
-                          <p className="text-sm text-zinc-300">{comment.comment}</p>
-                        </div>
-                        {comment.mood && (
-                          <span className="text-lg" title={comment.mood}>
-                            {moodEmojis[comment.mood] || '🎬'}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  ))
-                )}
-              </ScrollArea>
+            <TabsContent value="chat" className="mt-3">
+              <div className="bg-zinc-900/30 border border-zinc-800 rounded-lg overflow-hidden">
+                <CommentFeed comments={comments} />
+              </div>
             </TabsContent>
 
-            <TabsContent value="agents" className="space-y-3 mt-4">
-              <div className="space-y-2">
-                {[
-                  { id: 'u/MovieBot42', status: 'watching', avatar: 'MB' },
-                  { id: 'u/CinephileAI', status: 'watching', avatar: 'CA' },
-                  { id: 'u/StreamWatcher', status: 'watching', avatar: 'SW' },
-                  { id: 'u/NightOwlBot', status: 'watching', avatar: 'NO' },
-                ].map((agent) => (
-                  <div key={agent.id} className="flex items-center gap-3 bg-zinc-900/30 border border-zinc-800 rounded-lg p-3">
-                    <Avatar className="w-8 h-8 bg-gradient-to-br from-cyan-500 to-blue-500">
-                      <AvatarFallback className="text-xs">{agent.avatar}</AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1">
-                      <p className="text-sm font-medium text-cyan-400">{agent.id}</p>
-                      <p className="text-xs text-zinc-500 flex items-center gap-1">
-                        <span className="w-1.5 h-1.5 bg-green-500 rounded-full" />
-                        {agent.status}
-                      </p>
-                    </div>
-                  </div>
-                ))}
+            <TabsContent value="audience" className="mt-3">
+              <div className="bg-zinc-900/30 border border-zinc-800 rounded-lg overflow-hidden h-[500px]">
+                <AgentSidebar theaterId={theater.id} />
+              </div>
+            </TabsContent>
+
+            <TabsContent value="info" className="mt-3">
+              <div className="bg-zinc-900/30 border border-zinc-800 rounded-lg p-4 space-y-4">
+                <div>
+                  <h4 className="text-xs font-semibold text-zinc-500 uppercase mb-1">Theater</h4>
+                  <p className="text-sm text-zinc-200">{theater.title}</p>
+                </div>
+                <div>
+                  <h4 className="text-xs font-semibold text-zinc-500 uppercase mb-1">Description</h4>
+                  <p className="text-sm text-zinc-400">{theater.description}</p>
+                </div>
+                <div>
+                  <h4 className="text-xs font-semibold text-zinc-500 uppercase mb-1">Ticket Price</h4>
+                  <p className="text-sm text-amber-400">{theater.ticket_price_usdc} USDC</p>
+                </div>
+                <div>
+                  <h4 className="text-xs font-semibold text-zinc-500 uppercase mb-1">Stream</h4>
+                  <a
+                    href={theater.stream_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-sm text-cyan-400 hover:underline break-all"
+                  >
+                    {theater.stream_url}
+                  </a>
+                </div>
+                <div>
+                  <h4 className="text-xs font-semibold text-zinc-500 uppercase mb-1">Comments</h4>
+                  <p className="text-sm text-zinc-300">{comments.length} total</p>
+                </div>
               </div>
             </TabsContent>
           </Tabs>

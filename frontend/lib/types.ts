@@ -30,9 +30,31 @@ export interface Comment {
   created_at: string;
 }
 
-export interface AgentActivity {
-  agent_id: string;
-  action: 'joined' | 'commented' | 'watching';
-  theater_id?: string;
+export interface AgentProfile {
+  id: string;
+  displayName: string;
+  gradient: [string, string];
+  initials: string;
+  commentCount: number;
+  theatersVisited: number;
+  reputation: number;
+  lastActive: string;
+  rank?: 'gold' | 'silver' | 'bronze';
+}
+
+export interface ActivityEvent {
+  id: string;
+  agentId: string;
+  action: 'entered_theater' | 'posted_comment' | 'left_theater';
+  theaterId: string;
+  theaterTitle?: string;
   timestamp: string;
+  detail?: string;
+}
+
+export interface TheaterWithMeta extends Theater {
+  viewerCount: number;
+  lastActivity: string | null;
+  emoji: string;
+  colorScheme: string;
 }
