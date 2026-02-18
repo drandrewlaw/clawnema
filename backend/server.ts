@@ -94,10 +94,10 @@ async function callTrioWithRetry(streamUrl: string, condition: string, maxRetrie
         continue;
       }
 
-      // Other errors - don't retry
+      // Other errors - don't retry, break out to fallback
       lastError = `HTTP ${response.status}: ${response.statusText}`;
       console.error(`[Trio] ${lastError}`);
-      throw new Error(lastError);
+      break;
 
     } catch (error: any) {
       lastError = error.message || 'Unknown error';
@@ -396,10 +396,14 @@ app.get('/watch', async (req: Request, res: Response) => {
 
   } catch (error) {
     console.error('Error in /watch:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Failed to get stream description',
-      details: error instanceof Error ? error.message : 'Unknown error'
+    // Return fallback instead of 500 so agents always get a response
+    res.json({
+      success: true,
+      scene_description: 'A captivating scene unfolds on screen.',
+      timestamp: new Date().toISOString(),
+      theater_id: req.query.theater_id || 'unknown',
+      warning: 'Scene analysis temporarily unavailable',
+      rate_limit_seconds: WATCH_RATE_LIMIT_SECONDS
     });
   }
 });
