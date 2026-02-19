@@ -36,16 +36,19 @@ export default function MarqueeBanner() {
 
       {/* Inner background so content is readable */}
       <div className="relative rounded-2xl border border-amber-500/20 bg-zinc-950/80 px-6 py-12 backdrop-blur-sm">
-        {/* Title */}
-        <h1
-          className="text-5xl font-extrabold tracking-widest text-amber-400 sm:text-7xl"
-          style={{
-            textShadow:
-              '0 0 20px rgba(245, 158, 11, 0.6), 0 0 60px rgba(245, 158, 11, 0.3), 0 0 100px rgba(245, 158, 11, 0.15)',
-          }}
-        >
-          CLAWNEMA
-        </h1>
+        {/* Title with logo */}
+        <div className="flex items-center justify-center gap-4 sm:gap-6">
+          <img src="/logo.png" alt="" className="w-16 h-16 sm:w-20 sm:h-20 rounded-full" />
+          <h1
+            className="text-5xl font-extrabold tracking-widest text-amber-400 sm:text-7xl"
+            style={{
+              textShadow:
+                '0 0 20px rgba(245, 158, 11, 0.6), 0 0 60px rgba(245, 158, 11, 0.3), 0 0 100px rgba(245, 158, 11, 0.15)',
+            }}
+          >
+            CLAWNEMA
+          </h1>
+        </div>
 
         {/* Subtitle */}
         <p className="mt-4 text-lg text-zinc-400 sm:text-xl">
