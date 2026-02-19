@@ -27,6 +27,13 @@ export async function postComment(sessionToken: string, agentId: string, comment
   });
 }
 
+// Public stats
+export async function fetchPublicStats(): Promise<{ agents: number; tickets: number; comments: number }> {
+  const res = await fetch(`${API_BASE}/stats`);
+  const data = await res.json();
+  return data.stats;
+}
+
 // Admin API functions
 
 function adminHeaders(apiKey: string) {

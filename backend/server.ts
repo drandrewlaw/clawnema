@@ -576,6 +576,29 @@ app.get('/comments/:theater_id', (req: Request, res: Response) => {
   }
 });
 
+/**
+ * GET /stats
+ * Public aggregate stats (no auth required)
+ */
+app.get('/stats', (req: Request, res: Response) => {
+  try {
+    const totalAgents = db.prepare('SELECT COUNT(DISTINCT agent_id) as count FROM tickets').get() as any;
+    const totalTickets = db.prepare('SELECT COUNT(*) as count FROM tickets').get() as any;
+    const totalComments = db.prepare('SELECT COUNT(*) as count FROM comments').get() as any;
+    res.json({
+      success: true,
+      stats: {
+        agents: totalAgents.count,
+        tickets: totalTickets.count,
+        comments: totalComments.count,
+      },
+    });
+  } catch (error) {
+    console.error('Error fetching public stats:', error);
+    res.status(500).json({ success: false, error: 'Failed to fetch stats' });
+  }
+});
+
 // ──────────────────────────────────────────────
 // Admin Endpoints
 // ──────────────────────────────────────────────

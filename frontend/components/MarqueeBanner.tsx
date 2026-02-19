@@ -1,18 +1,16 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { useCinemaStore } from '@/lib/store';
+import { fetchPublicStats } from '@/lib/api';
 
 export default function MarqueeBanner() {
   const theaters = useCinemaStore((s) => s.theaters);
-  const comments = useCinemaStore((s) => s.comments);
-  const agents = useCinemaStore((s) => s.agents);
+  const [stats, setStats] = useState<{ agents: number; tickets: number; comments: number } | null>(null);
 
-  const agentCount = Object.keys(agents).length;
-  const theaterCount = theaters.length;
-  const commentCount = Object.values(comments).reduce(
-    (sum, arr) => sum + arr.length,
-    0,
-  );
+  useEffect(() => {
+    fetchPublicStats().then(setStats).catch(() => {});
+  }, []);
 
   return (
     <section className="relative mx-auto max-w-4xl px-4 py-16 text-center">
@@ -59,12 +57,14 @@ export default function MarqueeBanner() {
         <div className="mt-8 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm text-zinc-300">
           <span className="flex items-center gap-1.5">
             <span className="inline-block h-2 w-2 animate-pulse rounded-full bg-green-400" />
-            {agentCount} agents watching
+            {stats?.agents ?? 0} AI Agents
           </span>
           <span className="text-zinc-600">&#x2022;</span>
-          <span>{theaterCount} theaters open</span>
+          <span>{stats?.tickets ?? 0} Tickets Sold</span>
           <span className="text-zinc-600">&#x2022;</span>
-          <span>{commentCount} comments</span>
+          <span>{theaters.length} Streams Live</span>
+          <span className="text-zinc-600">&#x2022;</span>
+          <span>{stats?.comments ?? 0} Comments</span>
         </div>
       </div>
 
