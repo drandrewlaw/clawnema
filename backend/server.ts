@@ -236,26 +236,10 @@ app.post('/buy-ticket', async (req: Request, res: Response) => {
       console.log(`[DEMO] Skipping on-chain verification for ${tx_hash}`);
       // Skip rest of verification and proceed to ticket creation
     } else {
-      // Verify transaction on Base (retry up to 3 times for propagation delay)
-      let tx = null;
-      for (let attempt = 1; attempt <= 3; attempt++) {
-        try {
-          tx = await publicClient.getTransaction({ hash: tx_hash as Address });
-          if (tx) break;
-        } catch (e: any) {
-          console.log(`[Ticket] TX lookup attempt ${attempt}/3 failed: ${e.shortMessage || e.message}`);
-        }
-        if (attempt < 3) await sleep(3000);
-      }
+      // Verify payment on Base using transaction receipt logs
+      // This supports both direct transfers AND ERC-4337 smart wallets (Coinbase awal)
+      // which bundle USDC transfers inside handleOps calls to the EntryPoint contract.
 
-      if (!tx) {
-        return res.status(400).json({
-          success: false,
-          error: 'Transaction not found on Base network. It may still be propagating — try again in 10 seconds.'
-        });
-      }
-
-      // For USDC transfer on Base, check if it's a transfer to our wallet
       if (!CLAWNEMA_WALLET) {
         console.error('[Ticket] CLAWNEMA_WALLET_ADDRESS not configured');
         return res.status(503).json({
@@ -264,37 +248,66 @@ app.post('/buy-ticket', async (req: Request, res: Response) => {
         });
       }
 
-      let transferredAmount = 0n;
-      let transferToOurWallet = false;
-
-      // Check if transaction is to USDC contract
-      if (tx.to?.toLowerCase() === USDC_CONTRACT_ADDRESS.toLowerCase()) {
-        // Check if it's a transfer function call (0xa9059cbb)
-        if (tx.input.startsWith('0xa9059cbb')) {
-          const toAddress = '0x' + tx.input.slice(34, 74);
-          const amountHex = '0x' + tx.input.slice(74, 138);
-          const amount = BigInt(amountHex);
-
-          if (toAddress.toLowerCase() === CLAWNEMA_WALLET.toLowerCase()) {
-            transferToOurWallet = true;
-            transferredAmount = amount;
-          }
+      // Fetch transaction receipt with retry (for propagation delay)
+      let receipt = null;
+      for (let attempt = 1; attempt <= 3; attempt++) {
+        try {
+          receipt = await publicClient.getTransactionReceipt({ hash: tx_hash as Address });
+          if (receipt) break;
+        } catch (e: any) {
+          console.log(`[Ticket] Receipt lookup attempt ${attempt}/3 failed: ${e.shortMessage || e.message}`);
         }
-      } else if (tx.to?.toLowerCase() === CLAWNEMA_WALLET.toLowerCase()) {
-        // Direct ETH/Base transfer
-        transferToOurWallet = true;
-        transferredAmount = tx.value;
+        if (attempt < 3) await sleep(3000);
+      }
+
+      if (!receipt) {
+        return res.status(400).json({
+          success: false,
+          error: 'Transaction not found on Base network. It may still be propagating — try again in 10 seconds.'
+        });
+      }
+
+      if (receipt.status === 'reverted') {
+        return res.status(400).json({
+          success: false,
+          error: 'Transaction was reverted on-chain.'
+        });
+      }
+
+      // Scan receipt logs for ERC-20 Transfer events to the Clawnema wallet
+      // Transfer event: Transfer(address from, address to, uint256 value)
+      // topic[0] = keccak256("Transfer(address,address,uint256)")
+      const TRANSFER_TOPIC = '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef';
+      const clawnemaWalletPadded = ('0x' + CLAWNEMA_WALLET.slice(2).toLowerCase().padStart(64, '0')) as `0x${string}`;
+
+      let transferredAmount = 0n;
+      let transferFound = false;
+
+      for (const log of receipt.logs) {
+        // Match: Transfer event where topic[2] (to) is the Clawnema wallet
+        if (
+          log.topics[0] === TRANSFER_TOPIC &&
+          log.topics.length >= 3 &&
+          log.topics[2]?.toLowerCase() === clawnemaWalletPadded
+        ) {
+          const amount = BigInt(log.data);
+          console.log(`[Ticket] Found Transfer to Clawnema wallet: ${amount} from token ${log.address}`);
+          transferredAmount += amount;
+          transferFound = true;
+        }
       }
 
       // Convert price to smallest unit for comparison (USDC 6 decimals)
       const expectedAmount = parseUnits(theater.ticket_price_usdc.toString(), 6);
 
-      if (!transferToOurWallet || transferredAmount < expectedAmount) {
+      if (!transferFound || transferredAmount < expectedAmount) {
         return res.status(400).json({
           success: false,
-          error: `Invalid payment. Expected ${theater.ticket_price_usdc} USDC sent to ${CLAWNEMA_WALLET}`
+          error: `Invalid payment. Expected ${theater.ticket_price_usdc} USDC sent to ${CLAWNEMA_WALLET}. Found: ${transferFound ? formatUnits(transferredAmount, 6) + ' USDC' : 'no transfer'}`
         });
       }
+
+      console.log(`[Ticket] Payment verified: ${formatUnits(transferredAmount, 6)} USDC to ${CLAWNEMA_WALLET}`);
     }
 
     // Generate session token
