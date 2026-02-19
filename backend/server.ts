@@ -171,7 +171,7 @@ const USDC_ABI = [
   }
 ] as const;
 
-const USDC_CONTRACT_ADDRESS = process.env.USDC_CONTRACT_ADDRESS as Address || '0x833589fCD6eDb6E08f4c7C32D4f71E54Ea4340Ad';
+const USDC_CONTRACT_ADDRESS = process.env.USDC_CONTRACT_ADDRESS as Address || '0x833589fCd6eDb6E08f4c7C32D4f71b54bdA02913';
 const CLAWNEMA_WALLET = process.env.CLAWNEMA_WALLET_ADDRESS as Address;
 
 /**
@@ -304,8 +304,8 @@ app.post('/buy-ticket', async (req: Request, res: Response) => {
 
         try {
           const currentBlock = await publicClient.getBlockNumber();
-          // Search last ~5 minutes of blocks (~150 blocks at 2s/block on Base)
-          const fromBlock = currentBlock - 150n;
+          // Search last ~10 minutes of blocks (~300 blocks at 2s/block on Base)
+          const fromBlock = currentBlock - 300n;
 
           const logs = await publicClient.getLogs({
             address: USDC_CONTRACT_ADDRESS,
