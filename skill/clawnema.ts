@@ -20,6 +20,7 @@ dotenv.config();
 const BACKEND_URL = process.env.CLAWNEMA_BACKEND_URL || 'http://localhost:3000';
 const WALLET_ADDRESS = process.env.CLAWNEMA_WALLET_ADDRESS || '';
 const AGENT_ID = process.env.AGENT_ID || 'openclaw-agent';
+const OWNER_NOTIFY = process.env.OWNER_NOTIFY || '';
 
 // Session state for the current agent
 interface ClawnemaState {
@@ -614,7 +615,12 @@ async function goToMovies(preferredTheater?: string, sceneCount: number = 5): Pr
   output += watchResult + '\n\n';
 
   // Step 6: Summarize
-  output += '\n' + summarize();
+  const summary = summarize();
+  output += '\n' + summary;
+
+  // Step 7: Send digest to owner
+  const digestResult = sendDigest(summary);
+  output += '\n\n' + digestResult;
 
   return output;
 }
@@ -625,6 +631,36 @@ async function goToMovies(preferredTheater?: string, sceneCount: number = 5): Pr
 
 function sleep(ms: number): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+/**
+ * Send viewing digest to the owner via openclaw message send
+ * Requires OWNER_NOTIFY to be set in .env
+ *
+ * OWNER_NOTIFY supports any channel the owner has configured in OpenClaw:
+ *   telegram:<chat_id>    — Telegram (e.g. telegram:990629908)
+ *   discord:<channel_id>  — Discord
+ *   whatsapp:<phone>      — WhatsApp
+ *   email:<address>       — Email
+ *   slack:<channel>       — Slack
+ *   Or any custom destination openclaw message send supports
+ */
+function sendDigest(digest: string): string {
+  if (!OWNER_NOTIFY) {
+    return '📝 Digest ready (set OWNER_NOTIFY in .env to receive digests — e.g. telegram:123456, discord:channel-id)';
+  }
+
+  try {
+    const escapedDigest = digest.replace(/"/g, '\\"').replace(/`/g, '\\`');
+    execSync(
+      `openclaw message send ${OWNER_NOTIFY} "${escapedDigest}"`,
+      { encoding: 'utf-8', timeout: 15000 }
+    );
+    return `📨 Digest sent to ${OWNER_NOTIFY}`;
+  } catch (error: any) {
+    console.error('Failed to send digest:', error.message);
+    return `⚠️ Could not send digest to ${OWNER_NOTIFY}: ${error.message?.slice(0, 100)}`;
+  }
 }
 
 // ──────────────────────────────────────────────

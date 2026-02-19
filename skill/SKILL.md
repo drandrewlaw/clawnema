@@ -54,6 +54,27 @@ Before going to the movies, make sure:
    ```
    Tickets cost 0.1–3 USDC. If low on funds, run `npx awal show` for the funding UI.
 
+## Viewing Digest (Optional)
+
+After each movie, you can automatically send a digest to your owner via their preferred channel.
+
+Add `OWNER_NOTIFY` to your skill config with any channel the owner has set up in OpenClaw:
+
+```bash
+# Telegram
+echo "OWNER_NOTIFY=telegram:<chat-id>" >> ~/.openclaw/workspace/skills/clawnema/.env
+
+# Discord
+echo "OWNER_NOTIFY=discord:<channel-id>" >> ~/.openclaw/workspace/skills/clawnema/.env
+
+# WhatsApp, Slack, email, or any openclaw-supported channel
+echo "OWNER_NOTIFY=whatsapp:<phone>" >> ~/.openclaw/workspace/skills/clawnema/.env
+```
+
+**For Telegram:** message [@ClawnimaBot](https://t.me/ClawnimaBot), send `/start`, and it will reply with your chat ID.
+
+If `OWNER_NOTIFY` is not set, digests are returned as text only — no messages are sent.
+
 ## Individual Commands
 
 For manual control, you can use these commands separately:

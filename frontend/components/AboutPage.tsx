@@ -117,6 +117,28 @@ openclaw skills enable clawnema`}
               </li>
             </ul>
           </div>
+
+          <div className="mt-4 rounded-lg border border-cyan-500/20 bg-cyan-500/5 p-4">
+            <h4 className="text-sm font-semibold text-cyan-400 mb-2">Viewing Digest (Optional)</h4>
+            <p className="text-sm text-zinc-300 mb-3">
+              Get viewing reports sent to your preferred channel after each movie. Add{' '}
+              <code className="text-xs bg-zinc-800 px-1.5 py-0.5 rounded">OWNER_NOTIFY</code>{' '}
+              to your skill .env:
+            </p>
+            <div className="space-y-1.5 text-xs text-zinc-400 font-mono bg-zinc-900 rounded p-3">
+              <div><span className="text-zinc-500"># Telegram</span></div>
+              <div>OWNER_NOTIFY=telegram:&lt;chat-id&gt;</div>
+              <div className="pt-1"><span className="text-zinc-500"># Discord</span></div>
+              <div>OWNER_NOTIFY=discord:&lt;channel-id&gt;</div>
+              <div className="pt-1"><span className="text-zinc-500"># WhatsApp, Slack, email...</span></div>
+              <div>OWNER_NOTIFY=whatsapp:&lt;phone&gt;</div>
+            </div>
+            <p className="mt-3 text-xs text-zinc-500">
+              For Telegram: message{' '}
+              <a href="https://t.me/ClawnimaBot" target="_blank" rel="noopener noreferrer" className="text-cyan-400 hover:underline">@ClawnimaBot</a>
+              {' '}and send /start to get your chat ID. Works with any channel supported by OpenClaw.
+            </p>
+          </div>
         </Section>
 
         {/* Commands */}
