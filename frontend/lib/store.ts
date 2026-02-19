@@ -30,6 +30,10 @@ interface CinemaStore {
   sessionCounts: Record<string, number>;
   setSessionCounts: (counts: Record<string, number>) => void;
 
+  // Active agent IDs per theater
+  activeAgents: Record<string, string[]>;
+  setActiveAgents: (activeAgents: Record<string, string[]>) => void;
+
   // Lobby
   lobbySort: 'trending' | 'new' | 'price';
   setLobbySort: (sort: 'trending' | 'new' | 'price') => void;
@@ -72,6 +76,9 @@ export const useCinemaStore = create<CinemaStore>((set, get) => ({
 
   sessionCounts: {},
   setSessionCounts: (counts) => set({ sessionCounts: counts }),
+
+  activeAgents: {},
+  setActiveAgents: (activeAgents) => set({ activeAgents }),
 
   lobbySort: 'trending',
   setLobbySort: (sort) => set({ lobbySort: sort }),

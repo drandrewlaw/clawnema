@@ -17,6 +17,7 @@ export default function CinemaLobby() {
   const activityFeed = useCinemaStore((s) => s.activityFeed);
   const sessionCounts = useCinemaStore((s) => s.sessionCounts);
   const setSessionCounts = useCinemaStore((s) => s.setSessionCounts);
+  const setActiveAgents = useCinemaStore((s) => s.setActiveAgents);
   const lobbySort = useCinemaStore((s) => s.lobbySort);
   const setLobbySort = useCinemaStore((s) => s.setLobbySort);
   const setView = useCinemaStore((s) => s.setView);
@@ -34,13 +35,16 @@ export default function CinemaLobby() {
       theaters.forEach((t) => {
         fetchComments(t.id).then((c) => setComments(t.id, c));
       });
-      fetchWatching().then(setSessionCounts).catch(() => {});
+      fetchWatching().then(({ counts, activeAgents }) => {
+        setSessionCounts(counts);
+        setActiveAgents(activeAgents);
+      }).catch(() => {});
     };
 
     poll();
     const interval = setInterval(poll, COMMENT_POLL_INTERVAL);
     return () => clearInterval(interval);
-  }, [theaters, setComments, setSessionCounts]);
+  }, [theaters, setComments, setSessionCounts, setActiveAgents]);
 
   // Compute viewer counts: max of comment-based count and active session count
   const viewerCounts = useMemo(() => {

@@ -7,6 +7,7 @@ import { SEAT_ROWS, SEAT_COLS } from '@/lib/constants';
 
 interface SeatMapProps {
   comments: Comment[];
+  activeAgentIds?: string[];
 }
 
 const ROW_LABELS = ['A', 'B', 'C', 'D', 'E'];
@@ -42,7 +43,7 @@ function seatFillOrder(rows: number, cols: number): [number, number][] {
   return seats;
 }
 
-export default function SeatMap({ comments }: SeatMapProps) {
+export default function SeatMap({ comments, activeAgentIds }: SeatMapProps) {
   const [hoveredSeat, setHoveredSeat] = useState<string | null>(null);
 
   // Extract unique agents in order of first appearance (case-insensitive dedup)
@@ -108,6 +109,7 @@ export default function SeatMap({ comments }: SeatMapProps) {
                   const [from, to] = agentGradient(agentId);
                   const initials = agentInitials(agentId);
                   const displayName = agentDisplayName(agentId);
+                  const isActive = !activeAgentIds || activeAgentIds.includes(agentId);
 
                   return (
                     <div
@@ -117,7 +119,9 @@ export default function SeatMap({ comments }: SeatMapProps) {
                       onMouseLeave={() => setHoveredSeat(null)}
                     >
                       <div
-                        className={`flex h-7 w-7 items-center justify-center rounded-t-full bg-gradient-to-br ${from} ${to} text-[9px] font-bold text-white transition-transform hover:scale-110 sm:h-8 sm:w-8 sm:text-[10px]`}
+                        className={`flex h-7 w-7 items-center justify-center rounded-t-full bg-gradient-to-br ${from} ${to} text-[9px] font-bold text-white transition-transform hover:scale-110 sm:h-8 sm:w-8 sm:text-[10px] ${
+                          !isActive ? 'opacity-40 grayscale' : ''
+                        }`}
                       >
                         {initials}
                       </div>
@@ -125,7 +129,7 @@ export default function SeatMap({ comments }: SeatMapProps) {
                       {/* Tooltip */}
                       {hoveredSeat === seatKey && (
                         <div className="absolute -top-8 left-1/2 z-20 -translate-x-1/2 whitespace-nowrap rounded bg-zinc-800 px-2 py-1 text-xs text-zinc-200 shadow-lg">
-                          {displayName}
+                          {displayName}{!isActive && ' (left)'}
                         </div>
                       )}
                     </div>

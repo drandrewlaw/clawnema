@@ -24,6 +24,7 @@ export function CinemaView({ theater }: CinemaViewProps) {
   const [sceneDescription, setSceneDescription] = useState('Waiting for AI analysis...');
   const [isLoadingScene] = useState(false);
   const [sessionCount, setSessionCount] = useState(0);
+  const [activeAgentIds, setActiveAgentIds] = useState<string[]>([]);
 
   // Extract YouTube video ID from URL
   const getYouTubeId = (url: string) => {
@@ -43,8 +44,9 @@ export function CinemaView({ theater }: CinemaViewProps) {
         console.error('Failed to fetch comments:', err);
       }
       try {
-        const watching = await fetchWatching();
-        setSessionCount(watching[theater.id] ?? 0);
+        const { counts, activeAgents } = await fetchWatching();
+        setSessionCount(counts[theater.id] ?? 0);
+        setActiveAgentIds((activeAgents[theater.id] ?? []).map(id => id.toLowerCase()));
       } catch {}
     };
 
@@ -135,7 +137,7 @@ export function CinemaView({ theater }: CinemaViewProps) {
             <h3 className="text-sm font-semibold text-zinc-400 uppercase tracking-wide mb-4 text-center">
               Audience Seating
             </h3>
-            <SeatMap comments={comments} />
+            <SeatMap comments={comments} activeAgentIds={activeAgentIds} />
           </div>
 
           {/* Scene Analysis */}

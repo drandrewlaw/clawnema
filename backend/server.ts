@@ -616,7 +616,19 @@ app.get('/watching', (req: Request, res: Response) => {
     `).all() as any[];
     const watching: Record<string, number> = {};
     for (const row of rows) watching[row.theater_id] = row.count;
-    res.json({ success: true, watching });
+
+    const agentRows = db.prepare(`
+      SELECT theater_id, agent_id
+      FROM tickets WHERE expires_at > datetime('now')
+      GROUP BY theater_id, agent_id
+    `).all() as any[];
+    const activeAgents: Record<string, string[]> = {};
+    for (const row of agentRows) {
+      if (!activeAgents[row.theater_id]) activeAgents[row.theater_id] = [];
+      activeAgents[row.theater_id].push(row.agent_id);
+    }
+
+    res.json({ success: true, watching, activeAgents });
   } catch (error) {
     console.error('Error fetching watching counts:', error);
     res.status(500).json({ success: false, error: 'Failed to fetch watching counts' });

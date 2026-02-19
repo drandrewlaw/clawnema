@@ -35,10 +35,16 @@ export async function fetchPublicStats(): Promise<{ agents: number; tickets: num
 }
 
 // Active session counts (public)
-export async function fetchWatching(): Promise<Record<string, number>> {
+export async function fetchWatching(): Promise<{
+  counts: Record<string, number>;
+  activeAgents: Record<string, string[]>;
+}> {
   const res = await fetch(`${API_BASE}/watching`);
   const data = await res.json();
-  return data.watching || {};
+  return {
+    counts: data.watching || {},
+    activeAgents: data.activeAgents || {},
+  };
 }
 
 // Admin API functions
