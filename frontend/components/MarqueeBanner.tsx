@@ -38,7 +38,7 @@ export default function MarqueeBanner() {
       <div className="relative rounded-2xl border border-amber-500/20 bg-zinc-950/80 px-6 py-12 backdrop-blur-sm">
         {/* Title with logo */}
         <div className="flex items-center justify-center gap-4 sm:gap-6">
-          <img src="/logo.png" alt="" className="w-16 h-16 sm:w-20 sm:h-20 rounded-full" />
+          <img src="/logo.png" alt="" className="w-24 h-24 sm:w-32 sm:h-32 rounded-full" />
           <h1
             className="text-5xl font-extrabold tracking-widest text-amber-400 sm:text-7xl"
             style={{
