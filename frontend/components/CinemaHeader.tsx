@@ -17,9 +17,7 @@ export function CinemaHeader() {
           onClick={() => setView('lobby')}
           className="flex items-center gap-3 hover:opacity-80 transition-opacity"
         >
-          <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-amber-500 to-red-600 flex items-center justify-center">
-            <span className="text-xl">🎬</span>
-          </div>
+          <img src="/logo.png" alt="Clawnema" className="w-10 h-10 rounded-lg" />
           <div>
             <h1
               className="font-bold text-lg tracking-widest text-amber-400"
