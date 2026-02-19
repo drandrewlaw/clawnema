@@ -6,9 +6,9 @@ import { buildAgentRegistry, computeLeaderboard, generateActivityFeed } from './
 
 interface CinemaStore {
   // View
-  currentView: 'lobby' | 'theater';
+  currentView: 'lobby' | 'theater' | 'about';
   selectedTheater: Theater | null;
-  setView: (view: 'lobby' | 'theater', theater?: Theater | null) => void;
+  setView: (view: 'lobby' | 'theater' | 'about', theater?: Theater | null) => void;
 
   // Theaters
   theaters: Theater[];

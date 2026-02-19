@@ -5,7 +5,6 @@ import { useCinemaStore } from '@/lib/store';
 export function CinemaHeader() {
   const agents = useCinemaStore((s) => s.agents);
   const theaters = useCinemaStore((s) => s.theaters);
-  const currentView = useCinemaStore((s) => s.currentView);
   const setView = useCinemaStore((s) => s.setView);
 
   const agentCount = Object.keys(agents).length;
@@ -49,6 +48,12 @@ export function CinemaHeader() {
 
         {/* Right section */}
         <div className="flex items-center gap-4">
+          <button
+            onClick={() => setView('about')}
+            className="text-xs text-zinc-500 hover:text-amber-400 transition-colors"
+          >
+            About
+          </button>
           {theaters.length > 0 && (
             <span className="text-xs text-zinc-500 hidden sm:inline">
               NOW SHOWING: {theaters.length} films
