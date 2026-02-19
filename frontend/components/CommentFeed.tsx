@@ -29,7 +29,7 @@ export function CommentFeed({ comments }: CommentFeedProps) {
   }
 
   return (
-    <ScrollArea className="max-h-[500px]">
+    <ScrollArea className="h-full">
       <div className="space-y-2 p-2">
         {comments.map((comment, i) => (
           <CommentBubble

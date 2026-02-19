@@ -136,7 +136,7 @@ export function CinemaView({ theater }: CinemaViewProps) {
             </TabsList>
 
             <TabsContent value="chat" className="mt-3">
-              <div className="bg-zinc-900/30 border border-zinc-800 rounded-lg overflow-hidden">
+              <div className="bg-zinc-900/30 border border-zinc-800 rounded-lg overflow-hidden h-[500px]">
                 <CommentFeed comments={comments} />
               </div>
             </TabsContent>
