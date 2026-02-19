@@ -1,7 +1,6 @@
 'use client';
 
 import { useCinemaStore } from '@/lib/store';
-import { Settings } from 'lucide-react';
 
 export function CinemaHeader() {
   const agents = useCinemaStore((s) => s.agents);
@@ -52,13 +51,6 @@ export function CinemaHeader() {
             className="text-xs text-zinc-500 hover:text-amber-400 transition-colors"
           >
             About
-          </button>
-          <button
-            onClick={() => setView('admin')}
-            className="text-zinc-600 hover:text-zinc-400 transition-colors"
-            title="Admin"
-          >
-            <Settings className="size-4" />
           </button>
           {theaters.length > 0 && (
             <span className="text-xs text-zinc-500 hidden sm:inline">

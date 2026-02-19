@@ -7,7 +7,6 @@ import CinemaLobby from '@/components/CinemaLobby';
 import { CinemaView } from '@/components/CinemaView';
 import { AgentFooter } from '@/components/AgentFooter';
 import AboutPage from '@/components/AboutPage';
-import { AdminDashboard } from '@/components/AdminDashboard';
 
 export default function Home() {
   const currentView = useCinemaStore((s) => s.currentView);
@@ -22,8 +21,6 @@ export default function Home() {
           <CinemaView theater={selectedTheater} />
         ) : currentView === 'about' ? (
           <AboutPage />
-        ) : currentView === 'admin' ? (
-          <AdminDashboard />
         ) : (
           <CinemaLobby />
         )}
