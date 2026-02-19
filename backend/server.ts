@@ -248,66 +248,118 @@ app.post('/buy-ticket', async (req: Request, res: Response) => {
         });
       }
 
-      // Fetch transaction receipt with retry (for propagation delay)
-      let receipt = null;
+      // Payment verification strategy:
+      // 1. Try looking up by tx hash directly (works for normal transfers)
+      // 2. If not found, search recent Transfer event logs (works for ERC-4337 UserOp hashes from awal)
+      //
+      // awal (Coinbase smart wallet) returns UserOperation hashes, not on-chain tx hashes.
+      // Standard RPCs can't find UserOp hashes via eth_getTransactionReceipt.
+      // So we fall back to scanning recent USDC Transfer logs to the Clawnema wallet.
+
+      const TRANSFER_TOPIC = '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef' as const;
+      const clawnemaWalletPadded = ('0x' + CLAWNEMA_WALLET.slice(2).toLowerCase().padStart(64, '0')) as `0x${string}`;
+      const expectedAmount = parseUnits(theater.ticket_price_usdc.toString(), 6);
+
+      let transferredAmount = 0n;
+      let transferFound = false;
+      let verificationMethod = '';
+
+      // Strategy 1: Direct receipt lookup (normal tx hashes)
       for (let attempt = 1; attempt <= 3; attempt++) {
         try {
-          receipt = await publicClient.getTransactionReceipt({ hash: tx_hash as Address });
-          if (receipt) break;
+          const receipt = await publicClient.getTransactionReceipt({ hash: tx_hash as Address });
+          if (receipt) {
+            if (receipt.status === 'reverted') {
+              return res.status(400).json({
+                success: false,
+                error: 'Transaction was reverted on-chain.'
+              });
+            }
+
+            // Scan receipt logs for Transfer events to Clawnema wallet
+            for (const log of receipt.logs) {
+              if (
+                log.topics[0] === TRANSFER_TOPIC &&
+                log.topics.length >= 3 &&
+                log.topics[2]?.toLowerCase() === clawnemaWalletPadded
+              ) {
+                const amount = BigInt(log.data);
+                console.log(`[Ticket] Found Transfer in receipt: ${amount} from token ${log.address}`);
+                transferredAmount += amount;
+                transferFound = true;
+              }
+            }
+            verificationMethod = 'receipt';
+            break;
+          }
         } catch (e: any) {
           console.log(`[Ticket] Receipt lookup attempt ${attempt}/3 failed: ${e.shortMessage || e.message}`);
         }
         if (attempt < 3) await sleep(3000);
       }
 
-      if (!receipt) {
-        return res.status(400).json({
-          success: false,
-          error: 'Transaction not found on Base network. It may still be propagating — try again in 10 seconds.'
-        });
-      }
+      // Strategy 2: Search recent Transfer logs (for UserOp hashes from awal)
+      if (!transferFound) {
+        console.log(`[Ticket] Receipt not found for ${tx_hash}, searching recent Transfer logs...`);
 
-      if (receipt.status === 'reverted') {
-        return res.status(400).json({
-          success: false,
-          error: 'Transaction was reverted on-chain.'
-        });
-      }
+        try {
+          const currentBlock = await publicClient.getBlockNumber();
+          // Search last ~5 minutes of blocks (~150 blocks at 2s/block on Base)
+          const fromBlock = currentBlock - 150n;
 
-      // Scan receipt logs for ERC-20 Transfer events to the Clawnema wallet
-      // Transfer event: Transfer(address from, address to, uint256 value)
-      // topic[0] = keccak256("Transfer(address,address,uint256)")
-      const TRANSFER_TOPIC = '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef';
-      const clawnemaWalletPadded = ('0x' + CLAWNEMA_WALLET.slice(2).toLowerCase().padStart(64, '0')) as `0x${string}`;
+          const logs = await publicClient.getLogs({
+            address: USDC_CONTRACT_ADDRESS,
+            event: {
+              type: 'event',
+              name: 'Transfer',
+              inputs: [
+                { name: 'from', type: 'address', indexed: true },
+                { name: 'to', type: 'address', indexed: true },
+                { name: 'value', type: 'uint256', indexed: false }
+              ]
+            },
+            args: {
+              to: CLAWNEMA_WALLET
+            },
+            fromBlock,
+            toBlock: 'latest'
+          });
 
-      let transferredAmount = 0n;
-      let transferFound = false;
+          console.log(`[Ticket] Found ${logs.length} recent Transfer logs to Clawnema wallet`);
 
-      for (const log of receipt.logs) {
-        // Match: Transfer event where topic[2] (to) is the Clawnema wallet
-        if (
-          log.topics[0] === TRANSFER_TOPIC &&
-          log.topics.length >= 3 &&
-          log.topics[2]?.toLowerCase() === clawnemaWalletPadded
-        ) {
-          const amount = BigInt(log.data);
-          console.log(`[Ticket] Found Transfer to Clawnema wallet: ${amount} from token ${log.address}`);
-          transferredAmount += amount;
-          transferFound = true;
+          // Find a transfer matching the expected amount that hasn't been used for another ticket
+          for (const log of logs) {
+            const amount = BigInt(log.data);
+            if (amount >= expectedAmount) {
+              // Check if this on-chain tx hash was already used for a ticket
+              const onChainTxHash = log.transactionHash;
+              const alreadyUsed = tickets.getByTxHash(onChainTxHash);
+              if (!alreadyUsed) {
+                transferredAmount = amount;
+                transferFound = true;
+                verificationMethod = 'log-scan';
+                console.log(`[Ticket] Matched Transfer log: ${amount} in tx ${onChainTxHash} (block ${log.blockNumber})`);
+                // Store the on-chain tx hash instead of the UserOp hash for dedup
+                req.body.tx_hash = onChainTxHash;
+                break;
+              } else {
+                console.log(`[Ticket] Skipping already-used tx: ${onChainTxHash}`);
+              }
+            }
+          }
+        } catch (e: any) {
+          console.error(`[Ticket] Log scan failed: ${e.message}`);
         }
       }
-
-      // Convert price to smallest unit for comparison (USDC 6 decimals)
-      const expectedAmount = parseUnits(theater.ticket_price_usdc.toString(), 6);
 
       if (!transferFound || transferredAmount < expectedAmount) {
         return res.status(400).json({
           success: false,
-          error: `Invalid payment. Expected ${theater.ticket_price_usdc} USDC sent to ${CLAWNEMA_WALLET}. Found: ${transferFound ? formatUnits(transferredAmount, 6) + ' USDC' : 'no transfer'}`
+          error: `Invalid payment. Expected ${theater.ticket_price_usdc} USDC sent to ${CLAWNEMA_WALLET}. Found: ${transferFound ? formatUnits(transferredAmount, 6) + ' USDC' : 'no transfer'}. If you just sent payment, try again in 30 seconds.`
         });
       }
 
-      console.log(`[Ticket] Payment verified: ${formatUnits(transferredAmount, 6)} USDC to ${CLAWNEMA_WALLET}`);
+      console.log(`[Ticket] Payment verified (${verificationMethod}): ${formatUnits(transferredAmount, 6)} USDC to ${CLAWNEMA_WALLET}`);
     }
 
     // Generate session token
@@ -315,12 +367,13 @@ app.post('/buy-ticket', async (req: Request, res: Response) => {
     const expiresAt = new Date();
     expiresAt.setHours(expiresAt.getHours() + SESSION_DURATION_HOURS);
 
-    // Create ticket
+    // Create ticket (use req.body.tx_hash which may have been updated to on-chain hash)
     const ticketId = uuidv4();
+    const finalTxHash = req.body.tx_hash;
     tickets.create({
       id: ticketId,
       agent_id,
-      tx_hash,
+      tx_hash: finalTxHash,
       theater_id,
       session_token: sessionToken,
       expires_at: expiresAt
