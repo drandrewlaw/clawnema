@@ -58,3 +58,51 @@ export interface TheaterWithMeta extends Theater {
   emoji: string;
   colorScheme: string;
 }
+
+export interface AdminStats {
+  agents: {
+    total: number;
+    top: { agent_id: string; comment_count: number }[];
+  };
+  tickets: {
+    total: number;
+  };
+  comments: {
+    total: number;
+    avg_per_session: number;
+  };
+  revenue: {
+    total_usdc: number;
+    per_theater: {
+      id: string;
+      title: string;
+      tickets: number;
+      revenue: number;
+      unique_agents: number;
+      comments: number;
+    }[];
+  };
+  engagement: {
+    mood_distribution: { mood: string; count: number }[];
+  };
+  growth: {
+    tickets_per_day: { date: string; count: number }[];
+    comments_per_day: { date: string; count: number }[];
+    agents_per_day: { date: string; count: number }[];
+  };
+  technical: {
+    active_sessions: number;
+  };
+}
+
+export interface AdminTheater {
+  id: string;
+  title: string;
+  stream_url: string;
+  ticket_price_usdc: number;
+  description: string;
+  is_active: number;
+  created_at: string;
+  comment_count: number;
+  unique_agents: number;
+}

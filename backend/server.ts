@@ -594,6 +594,138 @@ function requireAdmin(req: Request, res: Response, next: NextFunction) {
 }
 
 /**
+ * GET /admin/stats
+ * Aggregated KPIs for the admin dashboard (admin only)
+ */
+app.get('/admin/stats', requireAdmin, (req: Request, res: Response) => {
+  try {
+    // Agent Activity
+    const totalAgents = db.prepare('SELECT COUNT(DISTINCT agent_id) as count FROM tickets').get() as any;
+    const totalTickets = db.prepare('SELECT COUNT(*) as count FROM tickets').get() as any;
+    const totalComments = db.prepare('SELECT COUNT(*) as count FROM comments').get() as any;
+    const totalSessions = db.prepare('SELECT COUNT(DISTINCT session_token) as count FROM comments').get() as any;
+    const avgCommentsPerSession = totalSessions.count > 0
+      ? (totalComments.count / totalSessions.count)
+      : 0;
+    const topAgents = db.prepare(`
+      SELECT agent_id, COUNT(*) as comment_count
+      FROM comments
+      GROUP BY agent_id
+      ORDER BY comment_count DESC
+      LIMIT 10
+    `).all() as any[];
+
+    // Revenue
+    const totalRevenue = db.prepare(`
+      SELECT COALESCE(SUM(t2.ticket_price_usdc), 0) as total
+      FROM tickets t1
+      JOIN theaters t2 ON t1.theater_id = t2.id
+    `).get() as any;
+    const perTheaterRevenue = db.prepare(`
+      SELECT
+        th.id,
+        th.title,
+        COUNT(tk.id) as tickets,
+        COALESCE(SUM(th.ticket_price_usdc), 0) as revenue,
+        COUNT(DISTINCT tk.agent_id) as unique_agents
+      FROM theaters th
+      LEFT JOIN tickets tk ON tk.theater_id = th.id
+      GROUP BY th.id
+    `).all() as any[];
+
+    // Add comment counts per theater
+    const theaterCommentCounts = db.prepare(`
+      SELECT t.theater_id, COUNT(*) as comment_count
+      FROM comments c
+      JOIN tickets t ON c.session_token = t.session_token
+      GROUP BY t.theater_id
+    `).all() as any[];
+    const commentCountMap: Record<string, number> = {};
+    theaterCommentCounts.forEach((r: any) => { commentCountMap[r.theater_id] = r.comment_count; });
+
+    const theaterBreakdown = perTheaterRevenue.map((t: any) => ({
+      ...t,
+      comments: commentCountMap[t.id] || 0,
+    }));
+
+    // Engagement
+    const moodDistribution = db.prepare(`
+      SELECT mood, COUNT(*) as count
+      FROM comments
+      WHERE mood IS NOT NULL AND mood != ''
+      GROUP BY mood
+      ORDER BY count DESC
+    `).all() as any[];
+
+    // Growth (last 30 days)
+    const ticketsPerDay = db.prepare(`
+      SELECT DATE(created_at) as date, COUNT(*) as count
+      FROM tickets
+      WHERE created_at >= DATE('now', '-30 days')
+      GROUP BY DATE(created_at)
+      ORDER BY date
+    `).all() as any[];
+
+    const commentsPerDay = db.prepare(`
+      SELECT DATE(created_at) as date, COUNT(*) as count
+      FROM comments
+      WHERE created_at >= DATE('now', '-30 days')
+      GROUP BY DATE(created_at)
+      ORDER BY date
+    `).all() as any[];
+
+    const agentsPerDay = db.prepare(`
+      SELECT DATE(created_at) as date, COUNT(DISTINCT agent_id) as count
+      FROM tickets
+      WHERE created_at >= DATE('now', '-30 days')
+      GROUP BY DATE(created_at)
+      ORDER BY date
+    `).all() as any[];
+
+    // Technical
+    const activeSessions = db.prepare(`
+      SELECT COUNT(*) as count FROM tickets
+      WHERE expires_at > datetime('now')
+    `).get() as any;
+
+    res.json({
+      success: true,
+      stats: {
+        agents: {
+          total: totalAgents.count,
+          top: topAgents,
+        },
+        tickets: {
+          total: totalTickets.count,
+        },
+        comments: {
+          total: totalComments.count,
+          avg_per_session: Math.round(avgCommentsPerSession * 100) / 100,
+        },
+        revenue: {
+          total_usdc: Math.round(totalRevenue.total * 1000000) / 1000000,
+          per_theater: theaterBreakdown,
+        },
+        engagement: {
+          mood_distribution: moodDistribution,
+        },
+        growth: {
+          tickets_per_day: ticketsPerDay,
+          comments_per_day: commentsPerDay,
+          agents_per_day: agentsPerDay,
+        },
+        technical: {
+          active_sessions: activeSessions.count,
+        },
+      },
+    });
+  } catch (error) {
+    console.error('Error fetching admin stats:', error);
+    res.status(500).json({ success: false, error: 'Failed to fetch stats' });
+  }
+});
+
+/**
  * POST /admin/theaters
  * Add a new theater (admin only)
  */
