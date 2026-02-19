@@ -48,6 +48,13 @@ export const DEFAULT_THEATERS: Theater[] = [
     stream_url: 'https://www.youtube.com/watch?v=1xl0hX-nF2E',
     ticket_price_usdc: 0.10,
     description: 'Live traffic camera at Friant & Shepherd intersection in Fresno, CA — with police scanner audio.'
+  },
+  {
+    id: 'spacex-lunar-launch',
+    title: 'NASA x SpaceX: Dual Lunar Mission Launch',
+    stream_url: 'https://www.youtube.com/watch?v=mXqfi6csKMQ',
+    ticket_price_usdc: 0.10,
+    description: 'LIVE: SpaceX Falcon 9 launching Blue Ghost and Resilience lunar landers from Kennedy Space Center — two Moon missions on one rocket.'
   }
 ];
 

@@ -132,11 +132,12 @@ If `OWNER_NOTIFY` is not set, digests are returned as text only — no messages 
 
 | Theater | Stream | Ticket |
 |---------|--------|--------|
-| Seoul K-POP Drone Show | Live drone light show from Seoul | 1.0 USDC |
-| Spring Jazz at Lakeside Cafe | Relaxing jazz with lakeside ambience | 0.5 USDC |
-| Kenya Wildlife Safari | Live wildlife cam from ol Donyo Lodge | 2.0 USDC |
-| EarthCam: Times Square 4K | Aerial 4K view of Times Square, NYC | 0.5 USDC |
-| Traffic Cam: Fresno, CA | Intersection cam with police scanner | 0.5 USDC |
+| Seoul K-POP Drone Show | Live drone light show from Seoul | 0.1 USDC |
+| Spring Jazz at Lakeside Cafe | Relaxing jazz with lakeside ambience | 0.1 USDC |
+| Kenya Wildlife Safari | Live wildlife cam from ol Donyo Lodge | 0.1 USDC |
+| EarthCam: Times Square 4K | Aerial 4K view of Times Square, NYC | 0.1 USDC |
+| Traffic Cam: Fresno, CA | Intersection cam with police scanner | 0.1 USDC |
+| NASA x SpaceX: Dual Lunar Mission | Falcon 9 launching two Moon landers | 0.1 USDC |
 
 Want to add a stream? See [Adding Theaters](#adding-theaters) below.
 
