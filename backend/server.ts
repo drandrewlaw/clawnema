@@ -492,10 +492,127 @@ app.get('/comments/:theater_id', (req: Request, res: Response) => {
   }
 });
 
+// ──────────────────────────────────────────────
+// Admin Endpoints
+// ──────────────────────────────────────────────
+
+const ADMIN_API_KEY = process.env.ADMIN_API_KEY;
+
+function requireAdmin(req: Request, res: Response, next: NextFunction) {
+  if (!ADMIN_API_KEY) {
+    return res.status(503).json({ success: false, error: 'Admin API not configured' });
+  }
+  const auth = req.headers.authorization;
+  if (!auth || auth !== `Bearer ${ADMIN_API_KEY}`) {
+    return res.status(401).json({ success: false, error: 'Invalid admin key' });
+  }
+  next();
+}
+
+/**
+ * POST /admin/theaters
+ * Add a new theater (admin only)
+ */
+app.post('/admin/theaters', requireAdmin, (req: Request, res: Response) => {
+  try {
+    const { id, title, stream_url, ticket_price_usdc, description } = req.body;
+
+    if (!id || !title || !stream_url || ticket_price_usdc == null) {
+      return res.status(400).json({
+        success: false,
+        error: 'Missing required fields: id, title, stream_url, ticket_price_usdc'
+      });
+    }
+
+    // Validate stream URL is YouTube
+    if (!stream_url.includes('youtube.com/') && !stream_url.includes('youtu.be/')) {
+      return res.status(400).json({
+        success: false,
+        error: 'stream_url must be a YouTube URL'
+      });
+    }
+
+    // Check if theater already exists
+    const existing = theaters.getById(id);
+    if (existing) {
+      return res.status(409).json({
+        success: false,
+        error: `Theater "${id}" already exists`
+      });
+    }
+
+    theaters.create({
+      id,
+      title,
+      stream_url,
+      ticket_price_usdc: parseFloat(ticket_price_usdc),
+      description: description || ''
+    });
+
+    console.log(`[Admin] Added theater: ${title} (${id})`);
+
+    res.status(201).json({
+      success: true,
+      theater: { id, title, stream_url, ticket_price_usdc, description }
+    });
+  } catch (error) {
+    console.error('Error adding theater:', error);
+    res.status(500).json({ success: false, error: 'Failed to add theater' });
+  }
+});
+
+/**
+ * DELETE /admin/theaters/:id
+ * Remove a theater (admin only)
+ */
+app.delete('/admin/theaters/:id', requireAdmin, (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const existing = theaters.getById(id);
+    if (!existing) {
+      return res.status(404).json({ success: false, error: 'Theater not found' });
+    }
+
+    const stmt = db.prepare('DELETE FROM theaters WHERE id = ?');
+    stmt.run(id);
+
+    console.log(`[Admin] Removed theater: ${id}`);
+    res.json({ success: true, message: `Theater "${id}" removed` });
+  } catch (error) {
+    console.error('Error removing theater:', error);
+    res.status(500).json({ success: false, error: 'Failed to remove theater' });
+  }
+});
+
+/**
+ * GET /admin/theaters
+ * List all theaters with stats (admin only)
+ */
+app.get('/admin/theaters', requireAdmin, (req: Request, res: Response) => {
+  try {
+    const allTheaters = theaters.getAll();
+    const stats = allTheaters.map((t: any) => {
+      const theaterComments = comments.getByTheaterId(t.id);
+      const uniqueAgents = new Set(theaterComments.map((c: any) => c.agent_id));
+      return {
+        ...t,
+        comment_count: theaterComments.length,
+        unique_agents: uniqueAgents.size
+      };
+    });
+    res.json({ success: true, theaters: stats });
+  } catch (error) {
+    res.status(500).json({ success: false, error: 'Failed to list theaters' });
+  }
+});
+
+// ──────────────────────────────────────────────
+// Health & Session Endpoints
+// ──────────────────────────────────────────────
+
 /**
  * GET /health
  * Health check endpoint
- * IMPROVEMENT: Returns additional metadata about system status
  */
 app.get('/health', async (req: Request, res: Response) => {
   try {
