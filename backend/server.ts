@@ -16,7 +16,7 @@ const PORT = process.env.PORT || 3000;
 
 // Rate limiting for /watch endpoint
 const watchRateLimits = new Map<string, number>();
-const WATCH_RATE_LIMIT_SECONDS = parseInt(process.env.WATCH_RATE_LIMIT_SECONDS || '30');
+const WATCH_RATE_LIMIT_SECONDS = parseInt(process.env.WATCH_RATE_LIMIT_SECONDS || '10');
 const SESSION_DURATION_HOURS = parseInt(process.env.SESSION_DURATION_HOURS || '2');
 
 // ──────────────────────────────────────────────
