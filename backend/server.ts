@@ -236,16 +236,34 @@ app.post('/buy-ticket', async (req: Request, res: Response) => {
       console.log(`[DEMO] Skipping on-chain verification for ${tx_hash}`);
       // Skip rest of verification and proceed to ticket creation
     } else {
-      // Verify transaction on Base
-      const tx = await publicClient.getTransaction({ hash: tx_hash as Address });
+      // Verify transaction on Base (retry up to 3 times for propagation delay)
+      let tx = null;
+      for (let attempt = 1; attempt <= 3; attempt++) {
+        try {
+          tx = await publicClient.getTransaction({ hash: tx_hash as Address });
+          if (tx) break;
+        } catch (e: any) {
+          console.log(`[Ticket] TX lookup attempt ${attempt}/3 failed: ${e.shortMessage || e.message}`);
+        }
+        if (attempt < 3) await sleep(3000);
+      }
+
       if (!tx) {
         return res.status(400).json({
           success: false,
-          error: 'Transaction not found on Base network'
+          error: 'Transaction not found on Base network. It may still be propagating — try again in 10 seconds.'
         });
       }
 
       // For USDC transfer on Base, check if it's a transfer to our wallet
+      if (!CLAWNEMA_WALLET) {
+        console.error('[Ticket] CLAWNEMA_WALLET_ADDRESS not configured');
+        return res.status(503).json({
+          success: false,
+          error: 'Server wallet not configured. Contact admin.'
+        });
+      }
+
       let transferredAmount = 0n;
       let transferToOurWallet = false;
 
