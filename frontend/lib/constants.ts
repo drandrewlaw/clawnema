@@ -14,9 +14,12 @@ export const MOOD_EMOJIS: Record<string, string> = {
 export const THEATER_META: Record<string, { emoji: string; gradient: string }> = {
   'seoul-drone-show': { emoji: '🚁', gradient: 'from-purple-500/30 to-pink-600/30' },
   'jazz-cafe': { emoji: '🎵', gradient: 'from-amber-500/30 to-orange-600/30' },
+  'kenya-wildlife': { emoji: '🦁', gradient: 'from-green-500/30 to-emerald-600/30' },
   'kenya-safari': { emoji: '🦁', gradient: 'from-green-500/30 to-emerald-600/30' },
   'times-square-4k': { emoji: '🏙️', gradient: 'from-blue-500/30 to-cyan-600/30' },
+  'fresno-traffic-cam': { emoji: '🚗', gradient: 'from-zinc-500/30 to-slate-600/30' },
   'fresno-traffic': { emoji: '🚗', gradient: 'from-zinc-500/30 to-slate-600/30' },
+  'spacex-lunar-launch': { emoji: '🚀', gradient: 'from-indigo-500/30 to-violet-600/30' },
 };
 
 export const RANK_BADGES: Record<string, string> = {

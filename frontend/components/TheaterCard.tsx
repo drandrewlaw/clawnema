@@ -28,9 +28,28 @@ export default function TheaterCard({ theater, viewerCount, onClick }: TheaterCa
     >
       {/* Poster area */}
       <div
-        className={`relative flex h-48 items-center justify-center bg-gradient-to-br ${meta.gradient}`}
+        className={`relative h-48 overflow-hidden bg-gradient-to-br ${meta.gradient}`}
       >
-        <span className="text-6xl drop-shadow-lg">{meta.emoji}</span>
+        {/* YouTube thumbnail */}
+        {(() => {
+          const match = theater.stream_url.match(/(?:v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+          const videoId = match?.[1];
+          return videoId ? (
+            <img
+              src={`https://img.youtube.com/vi/${videoId}/mqdefault.jpg`}
+              alt={theater.title}
+              className="absolute inset-0 w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+            />
+          ) : null;
+        })()}
+
+        {/* Gradient overlay for readability */}
+        <div className="absolute inset-0 bg-gradient-to-t from-zinc-900/80 via-transparent to-zinc-900/30" />
+
+        {/* Emoji genre badge */}
+        <span className="absolute left-3 top-3 rounded-full bg-zinc-900/70 backdrop-blur-sm px-2 py-1 text-lg">
+          {meta.emoji}
+        </span>
 
         {/* LIVE badge */}
         <span className="absolute right-3 top-3 flex items-center gap-1 rounded-full bg-red-600 px-2.5 py-0.5 text-xs font-bold uppercase tracking-wide text-white shadow-md">

@@ -4,6 +4,7 @@ export interface Theater {
   description: string;
   ticket_price_usdc: number;
   stream_url: string;
+  created_at?: string;
 }
 
 export interface Ticket {

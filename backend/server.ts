@@ -183,12 +183,13 @@ app.get('/now-showing', (req: Request, res: Response) => {
     const activeTheaters = theaters.getAll();
     res.json({
       success: true,
-      theaters: activeTheaters.map(t => ({
+      theaters: activeTheaters.map((t: any) => ({
         id: t.id,
         title: t.title,
         description: t.description,
         ticket_price_usdc: t.ticket_price_usdc,
-        stream_url: t.stream_url
+        stream_url: t.stream_url,
+        created_at: t.created_at
       }))
     });
   } catch (error) {

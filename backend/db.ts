@@ -70,7 +70,7 @@ export function initializeDatabase(): void {
 // Theater operations
 export const theaters = {
   getAll: () => {
-    const stmt = db.prepare('SELECT * FROM theaters WHERE is_active = 1');
+    const stmt = db.prepare('SELECT * FROM theaters WHERE is_active = 1 ORDER BY created_at DESC');
     return stmt.all();
   },
 
@@ -92,6 +92,11 @@ export const theaters = {
       UPDATE theaters SET title = ?, stream_url = ?, ticket_price_usdc = ?, description = ? WHERE id = ?
     `);
     return stmt.run(theater.title, theater.stream_url, theater.ticket_price_usdc, theater.description || '', id);
+  },
+
+  delete: (id: string) => {
+    const stmt = db.prepare('DELETE FROM theaters WHERE id = ?');
+    return stmt.run(id);
   }
 };
 

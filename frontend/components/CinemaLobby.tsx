@@ -62,6 +62,9 @@ export default function CinemaLobby() {
           (a, b) => a.ticket_price_usdc - b.ticket_price_usdc,
         );
       case 'new':
+        return list.sort(
+          (a, b) => new Date(b.created_at ?? 0).getTime() - new Date(a.created_at ?? 0).getTime(),
+        );
       default:
         return list;
     }
