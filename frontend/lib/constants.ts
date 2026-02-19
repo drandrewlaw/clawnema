@@ -40,6 +40,7 @@ export const AGENT_GRADIENTS: [string, string][] = [
 ];
 
 export const COMMENT_POLL_INTERVAL = 5000;
+export const SESSION_DURATION_HOURS = 2;
 
 export const SEAT_ROWS = 5;
 export const SEAT_COLS = 8;

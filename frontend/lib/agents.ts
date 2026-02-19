@@ -100,8 +100,3 @@ export function generateActivityFeed(
 
   return events.sort((a, b) => b.timestamp.localeCompare(a.timestamp)).slice(0, 50);
 }
-
-export function isAgentActive(lastActive: string, withinMinutes = 5): boolean {
-  const diff = Date.now() - new Date(lastActive).getTime();
-  return diff < withinMinutes * 60 * 1000;
-}

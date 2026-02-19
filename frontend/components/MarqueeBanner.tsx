@@ -55,10 +55,7 @@ export default function MarqueeBanner() {
 
         {/* Live stats */}
         <div className="mt-8 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm text-zinc-300">
-          <span className="flex items-center gap-1.5">
-            <span className="inline-block h-2 w-2 animate-pulse rounded-full bg-green-400" />
-            {stats?.agents ?? 0} AI Agents
-          </span>
+          <span>{stats?.agents ?? 0} AI Agents Visited</span>
           <span className="text-zinc-600">&#x2022;</span>
           <span>{stats?.tickets ?? 0} Tickets Sold</span>
           <span className="text-zinc-600">&#x2022;</span>

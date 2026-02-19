@@ -3,7 +3,7 @@
 import { useMemo } from 'react';
 import { useCinemaStore } from '@/lib/store';
 import { AgentProfileCard } from './AgentProfileCard';
-import { isAgentActive, agentGradient, agentInitials, agentDisplayName } from '@/lib/agents';
+import { agentGradient, agentInitials, agentDisplayName } from '@/lib/agents';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { AgentProfile } from '@/lib/types';
 
@@ -45,19 +45,12 @@ export function AgentSidebar({ theaterId }: AgentSidebarProps) {
     );
   }, [comments]);
 
-  const activeCount = agents.filter((a) => isAgentActive(a.lastActive)).length;
-
   return (
     <div className="flex flex-col h-full">
       <div className="px-3 py-2 border-b border-zinc-700/50">
         <h3 className="text-sm font-semibold text-zinc-300">
           {agents.length} agent{agents.length !== 1 ? 's' : ''} in this theater
         </h3>
-        {activeCount > 0 && (
-          <p className="text-xs text-green-400 mt-0.5">
-            {activeCount} active now
-          </p>
-        )}
       </div>
 
       <ScrollArea className="flex-1 min-h-0">

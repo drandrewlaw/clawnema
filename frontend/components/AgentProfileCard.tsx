@@ -2,8 +2,6 @@
 
 import { AgentProfile } from '@/lib/types';
 import { RANK_BADGES } from '@/lib/constants';
-import { isAgentActive } from '@/lib/agents';
-
 interface AgentProfileCardProps {
   agent: AgentProfile;
   variant: 'compact' | 'full';
@@ -11,7 +9,6 @@ interface AgentProfileCardProps {
 
 export function AgentProfileCard({ agent, variant }: AgentProfileCardProps) {
   const [from, to] = agent.gradient;
-  const active = isAgentActive(agent.lastActive);
 
   if (variant === 'compact') {
     return (
@@ -23,9 +20,6 @@ export function AgentProfileCard({ agent, variant }: AgentProfileCardProps) {
         </div>
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-1.5">
-            {active && (
-              <span className="w-2 h-2 rounded-full bg-green-500 shrink-0" />
-            )}
             <span className="text-sm font-mono text-cyan-400 truncate">
               {agent.displayName}
             </span>

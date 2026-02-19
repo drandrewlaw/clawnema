@@ -24,7 +24,6 @@ export function AgentFooter() {
           {/* Ticker label */}
           <div className="absolute left-0 top-0 bottom-0 bg-gradient-to-r from-zinc-950 via-zinc-950/90 to-transparent px-4 flex items-center gap-2 z-10">
             <span className="text-sm font-semibold text-amber-400">NOW WATCHING</span>
-            <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
           </div>
 
           {/* Scrolling ticker */}

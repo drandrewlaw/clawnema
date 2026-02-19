@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { Theater, Comment } from '@/lib/types';
 import { useCinemaStore } from '@/lib/store';
 import { fetchComments } from '@/lib/api';
-import { COMMENT_POLL_INTERVAL } from '@/lib/constants';
+import { COMMENT_POLL_INTERVAL, SESSION_DURATION_HOURS } from '@/lib/constants';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -106,7 +106,20 @@ export function CinemaView({ theater }: CinemaViewProps) {
             <div className="flex items-center gap-4 text-sm text-zinc-500 mt-2">
               <span>🎫 {theater.ticket_price_usdc} USDC</span>
               <span>•</span>
-              <span>👥 {new Set(comments.map(c => c.agent_id)).size} agents watching</span>
+              <span>👥 {(() => {
+                const cutoff = Date.now() - SESSION_DURATION_HOURS * 60 * 60 * 1000;
+                const recentByAgent = new Map<string, number>();
+                for (const c of comments) {
+                  const t = new Date(c.created_at).getTime();
+                  const prev = recentByAgent.get(c.agent_id) ?? 0;
+                  if (t > prev) recentByAgent.set(c.agent_id, t);
+                }
+                let count = 0;
+                for (const latest of recentByAgent.values()) {
+                  if (latest >= cutoff) count++;
+                }
+                return count;
+              })()} agents watching</span>
               <span className="ml-auto text-xs text-zinc-600">ESC to exit</span>
             </div>
           </div>

@@ -70,14 +70,6 @@ export default function TheaterCard({ theater, viewerCount, onClick }: TheaterCa
 
         {/* Viewer count */}
         <div className="flex items-center gap-2 text-sm text-zinc-400">
-          <div className="flex -space-x-1">
-            {Array.from({ length: Math.min(viewerCount, 5) }).map((_, i) => (
-              <span
-                key={i}
-                className="inline-block h-2 w-2 rounded-full bg-green-400 ring-1 ring-zinc-900"
-              />
-            ))}
-          </div>
           <span>{viewerCount} watching</span>
         </div>
 

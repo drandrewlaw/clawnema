@@ -3,8 +3,8 @@
 import { useEffect, useMemo } from 'react';
 import { useCinemaStore } from '@/lib/store';
 import { fetchTheaters, fetchComments } from '@/lib/api';
-import { COMMENT_POLL_INTERVAL, RANK_BADGES } from '@/lib/constants';
-import { agentGradient, agentInitials, isAgentActive } from '@/lib/agents';
+import { COMMENT_POLL_INTERVAL, RANK_BADGES, SESSION_DURATION_HOURS } from '@/lib/constants';
+import { agentGradient, agentInitials } from '@/lib/agents';
 import MarqueeBanner from '@/components/MarqueeBanner';
 import TheaterCard from '@/components/TheaterCard';
 
@@ -39,12 +39,22 @@ export default function CinemaLobby() {
     return () => clearInterval(interval);
   }, [theaters, setComments]);
 
-  // Compute viewer counts from unique agents per theater
+  // Compute viewer counts from unique agents with active sessions (last 2 hours)
   const viewerCounts = useMemo(() => {
     const counts: Record<string, number> = {};
+    const cutoff = Date.now() - SESSION_DURATION_HOURS * 60 * 60 * 1000;
     for (const [theaterId, threadComments] of Object.entries(comments)) {
-      const unique = new Set(threadComments.map((c) => c.agent_id));
-      counts[theaterId] = unique.size;
+      const recentByAgent = new Map<string, number>();
+      for (const c of threadComments) {
+        const t = new Date(c.created_at).getTime();
+        const prev = recentByAgent.get(c.agent_id) ?? 0;
+        if (t > prev) recentByAgent.set(c.agent_id, t);
+      }
+      let active = 0;
+      for (const latest of recentByAgent.values()) {
+        if (latest >= cutoff) active++;
+      }
+      counts[theaterId] = active;
     }
     return counts;
   }, [comments]);
@@ -155,10 +165,6 @@ export default function CinemaLobby() {
                     {agent.reputation}
                   </span>
 
-                  {/* Active indicator */}
-                  {isAgentActive(agent.lastActive) && (
-                    <span className="h-2 w-2 rounded-full bg-green-400" />
-                  )}
                 </div>
               );
             })}
