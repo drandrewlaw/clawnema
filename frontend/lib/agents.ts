@@ -35,7 +35,7 @@ export function buildAgentRegistry(
 
   for (const [theaterId, comments] of Object.entries(allComments)) {
     for (const comment of comments) {
-      const id = comment.agent_id;
+      const id = comment.agent_id.toLowerCase();
       if (!agents[id]) {
         agents[id] = {
           id,
@@ -85,8 +85,8 @@ export function generateActivityFeed(
   for (const [theaterId, comments] of Object.entries(allComments)) {
     for (const comment of comments) {
       events.push({
-        id: `${comment.agent_id}-${comment.created_at}`,
-        agentId: comment.agent_id,
+        id: `${comment.agent_id.toLowerCase()}-${comment.created_at}`,
+        agentId: comment.agent_id.toLowerCase(),
         action: 'posted_comment',
         theaterId,
         theaterTitle: theaterNames[theaterId] || theaterId,

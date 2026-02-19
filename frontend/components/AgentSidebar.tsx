@@ -18,7 +18,7 @@ export function AgentSidebar({ theaterId }: AgentSidebarProps) {
     const agentMap = new Map<string, AgentProfile>();
 
     for (const comment of comments) {
-      const id = comment.agent_id;
+      const id = comment.agent_id.toLowerCase();
       const existing = agentMap.get(id);
 
       if (!existing) {

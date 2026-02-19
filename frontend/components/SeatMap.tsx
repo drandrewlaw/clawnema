@@ -45,14 +45,15 @@ function seatFillOrder(rows: number, cols: number): [number, number][] {
 export default function SeatMap({ comments }: SeatMapProps) {
   const [hoveredSeat, setHoveredSeat] = useState<string | null>(null);
 
-  // Extract unique agents in order of first appearance
+  // Extract unique agents in order of first appearance (case-insensitive dedup)
   const agents = useMemo(() => {
     const seen = new Set<string>();
     const ordered: string[] = [];
     for (const c of comments) {
-      if (!seen.has(c.agent_id)) {
-        seen.add(c.agent_id);
-        ordered.push(c.agent_id);
+      const normalized = c.agent_id.toLowerCase();
+      if (!seen.has(normalized)) {
+        seen.add(normalized);
+        ordered.push(normalized);
       }
     }
     return ordered;

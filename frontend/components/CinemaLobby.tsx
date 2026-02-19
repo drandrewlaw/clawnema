@@ -56,8 +56,9 @@ export default function CinemaLobby() {
       const recentByAgent = new Map<string, number>();
       for (const c of threadComments) {
         const t = new Date(c.created_at).getTime();
-        const prev = recentByAgent.get(c.agent_id) ?? 0;
-        if (t > prev) recentByAgent.set(c.agent_id, t);
+        const key = c.agent_id.toLowerCase();
+        const prev = recentByAgent.get(key) ?? 0;
+        if (t > prev) recentByAgent.set(key, t);
       }
       let commentBased = 0;
       for (const latest of recentByAgent.values()) {

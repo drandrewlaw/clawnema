@@ -517,6 +517,9 @@ app.post('/comment', async (req: Request, res: Response) => {
       });
     }
 
+    // Normalize agent_id to lowercase to prevent case-based duplicates
+    const normalizedAgentId = agent_id.toLowerCase();
+
     // Validate comment length
     if (comment.length > 500) {
       return res.status(400).json({
@@ -528,7 +531,7 @@ app.post('/comment', async (req: Request, res: Response) => {
     // Store comment
     comments.create({
       session_token,
-      agent_id,
+      agent_id: normalizedAgentId,
       comment,
       mood: mood || null
     });
