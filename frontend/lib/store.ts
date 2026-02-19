@@ -26,6 +26,10 @@ interface CinemaStore {
   activityFeed: ActivityEvent[];
   refreshAgentData: () => void;
 
+  // Session-based watching counts
+  sessionCounts: Record<string, number>;
+  setSessionCounts: (counts: Record<string, number>) => void;
+
   // Lobby
   lobbySort: 'trending' | 'new' | 'price';
   setLobbySort: (sort: 'trending' | 'new' | 'price') => void;
@@ -65,6 +69,9 @@ export const useCinemaStore = create<CinemaStore>((set, get) => ({
     const activityFeed = generateActivityFeed(comments, theaterNames);
     set({ agents, leaderboard, activityFeed });
   },
+
+  sessionCounts: {},
+  setSessionCounts: (counts) => set({ sessionCounts: counts }),
 
   lobbySort: 'trending',
   setLobbySort: (sort) => set({ lobbySort: sort }),

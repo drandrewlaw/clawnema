@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo } from 'react';
 import { useCinemaStore } from '@/lib/store';
-import { fetchTheaters, fetchComments } from '@/lib/api';
+import { fetchTheaters, fetchComments, fetchWatching } from '@/lib/api';
 import { COMMENT_POLL_INTERVAL, RANK_BADGES, SESSION_DURATION_HOURS } from '@/lib/constants';
 import { agentGradient, agentInitials } from '@/lib/agents';
 import MarqueeBanner from '@/components/MarqueeBanner';
@@ -15,6 +15,8 @@ export default function CinemaLobby() {
   const setComments = useCinemaStore((s) => s.setComments);
   const leaderboard = useCinemaStore((s) => s.leaderboard);
   const activityFeed = useCinemaStore((s) => s.activityFeed);
+  const sessionCounts = useCinemaStore((s) => s.sessionCounts);
+  const setSessionCounts = useCinemaStore((s) => s.setSessionCounts);
   const lobbySort = useCinemaStore((s) => s.lobbySort);
   const setLobbySort = useCinemaStore((s) => s.setLobbySort);
   const setView = useCinemaStore((s) => s.setView);
@@ -32,32 +34,40 @@ export default function CinemaLobby() {
       theaters.forEach((t) => {
         fetchComments(t.id).then((c) => setComments(t.id, c));
       });
+      fetchWatching().then(setSessionCounts).catch(() => {});
     };
 
     poll();
     const interval = setInterval(poll, COMMENT_POLL_INTERVAL);
     return () => clearInterval(interval);
-  }, [theaters, setComments]);
+  }, [theaters, setComments, setSessionCounts]);
 
-  // Compute viewer counts from unique agents with active sessions (last 2 hours)
+  // Compute viewer counts: max of comment-based count and active session count
   const viewerCounts = useMemo(() => {
     const counts: Record<string, number> = {};
     const cutoff = Date.now() - SESSION_DURATION_HOURS * 60 * 60 * 1000;
-    for (const [theaterId, threadComments] of Object.entries(comments)) {
+    const allTheaterIds = new Set([
+      ...Object.keys(comments),
+      ...Object.keys(sessionCounts),
+    ]);
+    for (const theaterId of allTheaterIds) {
+      // Comment-based count
+      const threadComments = comments[theaterId] ?? [];
       const recentByAgent = new Map<string, number>();
       for (const c of threadComments) {
         const t = new Date(c.created_at).getTime();
         const prev = recentByAgent.get(c.agent_id) ?? 0;
         if (t > prev) recentByAgent.set(c.agent_id, t);
       }
-      let active = 0;
+      let commentBased = 0;
       for (const latest of recentByAgent.values()) {
-        if (latest >= cutoff) active++;
+        if (latest >= cutoff) commentBased++;
       }
-      counts[theaterId] = active;
+      // Take the higher of comment-based and session-based counts
+      counts[theaterId] = Math.max(commentBased, sessionCounts[theaterId] ?? 0);
     }
     return counts;
-  }, [comments]);
+  }, [comments, sessionCounts]);
 
   // Sort theaters
   const sortedTheaters = useMemo(() => {

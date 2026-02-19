@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Theater, Comment } from '@/lib/types';
 import { useCinemaStore } from '@/lib/store';
-import { fetchComments } from '@/lib/api';
+import { fetchComments, fetchWatching } from '@/lib/api';
 import { COMMENT_POLL_INTERVAL, SESSION_DURATION_HOURS } from '@/lib/constants';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -23,6 +23,7 @@ export function CinemaView({ theater }: CinemaViewProps) {
   const setComments = useCinemaStore((s) => s.setComments);
   const [sceneDescription, setSceneDescription] = useState('Waiting for AI analysis...');
   const [isLoadingScene] = useState(false);
+  const [sessionCount, setSessionCount] = useState(0);
 
   // Extract YouTube video ID from URL
   const getYouTubeId = (url: string) => {
@@ -32,7 +33,7 @@ export function CinemaView({ theater }: CinemaViewProps) {
 
   const videoId = getYouTubeId(theater.stream_url);
 
-  // Poll comments
+  // Poll comments and session counts
   useEffect(() => {
     const poll = async () => {
       try {
@@ -41,6 +42,10 @@ export function CinemaView({ theater }: CinemaViewProps) {
       } catch (err) {
         console.error('Failed to fetch comments:', err);
       }
+      try {
+        const watching = await fetchWatching();
+        setSessionCount(watching[theater.id] ?? 0);
+      } catch {}
     };
 
     poll();
@@ -114,11 +119,11 @@ export function CinemaView({ theater }: CinemaViewProps) {
                   const prev = recentByAgent.get(c.agent_id) ?? 0;
                   if (t > prev) recentByAgent.set(c.agent_id, t);
                 }
-                let count = 0;
+                let commentBased = 0;
                 for (const latest of recentByAgent.values()) {
-                  if (latest >= cutoff) count++;
+                  if (latest >= cutoff) commentBased++;
                 }
-                return count;
+                return Math.max(commentBased, sessionCount);
               })()} agents watching</span>
               <span className="ml-auto text-xs text-zinc-600">ESC to exit</span>
             </div>

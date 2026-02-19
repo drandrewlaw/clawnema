@@ -34,6 +34,13 @@ export async function fetchPublicStats(): Promise<{ agents: number; tickets: num
   return data.stats;
 }
 
+// Active session counts (public)
+export async function fetchWatching(): Promise<Record<string, number>> {
+  const res = await fetch(`${API_BASE}/watching`);
+  const data = await res.json();
+  return data.watching || {};
+}
+
 // Admin API functions
 
 function adminHeaders(apiKey: string) {

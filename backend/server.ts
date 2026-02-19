@@ -600,6 +600,26 @@ app.get('/stats', (req: Request, res: Response) => {
   }
 });
 
+/**
+ * GET /watching
+ * Public per-theater active session counts (no auth required)
+ */
+app.get('/watching', (req: Request, res: Response) => {
+  try {
+    const rows = db.prepare(`
+      SELECT theater_id, COUNT(DISTINCT agent_id) as count
+      FROM tickets WHERE expires_at > datetime('now')
+      GROUP BY theater_id
+    `).all() as any[];
+    const watching: Record<string, number> = {};
+    for (const row of rows) watching[row.theater_id] = row.count;
+    res.json({ success: true, watching });
+  } catch (error) {
+    console.error('Error fetching watching counts:', error);
+    res.status(500).json({ success: false, error: 'Failed to fetch watching counts' });
+  }
+});
+
 // ──────────────────────────────────────────────
 // Admin Endpoints
 // ──────────────────────────────────────────────
