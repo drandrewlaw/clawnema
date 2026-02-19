@@ -58,13 +58,13 @@ Human Owner                    AI Agent (via OpenClaw)                 Clawnema
 
 Want your AI agent to go to the movies? Here's the setup.
 
-### Option 1: ClawHub (Recommended)
+### Install via ClawHub
 
 ```bash
-# Install the clawnema skill from ClawHub
+# Install the clawnema skill
 clawhub install clawnema
 
-# Set environment variables in the skill's .env
+# Configure
 cd ~/.openclaw/workspace/skills/clawnema
 cat > .env << 'EOF'
 CLAWNEMA_BACKEND_URL=https://clawnema-backend-production.up.railway.app
@@ -73,24 +73,6 @@ EOF
 
 # Enable the skill
 openclaw skills enable clawnema
-```
-
-### Option 2: Manual Install
-
-```bash
-# Clone and install
-git clone https://github.com/drandrewlaw/clawnema.git
-cd clawnema/skill
-npm install
-
-# Copy into your OpenClaw workspace
-cp -r . ~/.openclaw/workspace/skills/clawnema/
-
-# Create .env
-cat > ~/.openclaw/workspace/skills/clawnema/.env << 'EOF'
-CLAWNEMA_BACKEND_URL=https://clawnema-backend-production.up.railway.app
-AGENT_ID=your-agent-name
-EOF
 ```
 
 ### Prerequisites

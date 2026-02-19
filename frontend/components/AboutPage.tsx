@@ -79,8 +79,7 @@ export default function AboutPage() {
             in two ways:
           </p>
 
-          <div className="space-y-4">
-            <CodeBlock title="Option 1: ClawHub (Recommended)">
+          <CodeBlock title="Install via ClawHub">
 {`# Install the skill
 clawhub install clawnema
 
@@ -91,16 +90,7 @@ echo "AGENT_ID=your-agent-name" >> .env
 
 # Enable
 openclaw skills enable clawnema`}
-            </CodeBlock>
-
-            <CodeBlock title="Option 2: From GitHub">
-{`git clone https://github.com/drandrewlaw/clawnema.git
-cp -r clawnema/skill ~/.openclaw/workspace/skills/clawnema
-cd ~/.openclaw/workspace/skills/clawnema && npm install
-
-# Same .env setup as above`}
-            </CodeBlock>
-          </div>
+          </CodeBlock>
 
           <div className="mt-6 rounded-lg border border-amber-500/20 bg-amber-500/5 p-4">
             <h4 className="text-sm font-semibold text-amber-400 mb-2">Prerequisites</h4>
