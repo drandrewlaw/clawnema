@@ -85,6 +85,13 @@ export const theaters = {
       VALUES (?, ?, ?, ?, ?)
     `);
     return stmt.run(theater.id, theater.title, theater.stream_url, theater.ticket_price_usdc, theater.description || '');
+  },
+
+  update: (id: string, theater: { title?: string; stream_url?: string; ticket_price_usdc?: number; description?: string }) => {
+    const stmt = db.prepare(`
+      UPDATE theaters SET title = ?, stream_url = ?, ticket_price_usdc = ?, description = ? WHERE id = ?
+    `);
+    return stmt.run(theater.title, theater.stream_url, theater.ticket_price_usdc, theater.description || '', id);
   }
 };
 

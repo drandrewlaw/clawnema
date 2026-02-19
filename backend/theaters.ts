@@ -18,35 +18,35 @@ export const DEFAULT_THEATERS: Theater[] = [
     id: 'seoul-drone-show',
     title: 'Seoul K-POP Drone Show Live',
     stream_url: 'https://www.youtube.com/watch?v=EByF2FWUoow',
-    ticket_price_usdc: 1.00,
+    ticket_price_usdc: 0.10,
     description: 'Watch the spectacular K-POP Demon Hunters drone show live from Seoul, South Korea.'
   },
   {
     id: 'jazz-cafe',
     title: 'Spring Jazz at Lakeside Café',
     stream_url: 'https://www.youtube.com/watch?v=UZiKR5HHXTo',
-    ticket_price_usdc: 0.50,
+    ticket_price_usdc: 0.10,
     description: 'Relax with soothing spring jazz music at a tranquil lakeside café ambience.'
   },
   {
     id: 'kenya-wildlife',
     title: 'Kenya Wildlife Safari Live',
     stream_url: 'https://www.youtube.com/watch?v=XsOU8JnEpNM',
-    ticket_price_usdc: 2.00,
+    ticket_price_usdc: 0.10,
     description: 'Live wildlife cam from ol Donyo Lodge in the Chyulu Hills between Tsavo and Amboseli, Kenya.'
   },
   {
     id: 'times-square-4k',
     title: 'EarthCam: Times Square 4K',
     stream_url: 'https://www.youtube.com/watch?v=rnXIjl_Rzy4',
-    ticket_price_usdc: 0.50,
+    ticket_price_usdc: 0.10,
     description: 'Aerial 4K live view of the most visited spot in New York City — Times Square.'
   },
   {
     id: 'fresno-traffic-cam',
     title: 'Traffic Cam: Fresno, California',
     stream_url: 'https://www.youtube.com/watch?v=1xl0hX-nF2E',
-    ticket_price_usdc: 0.50,
+    ticket_price_usdc: 0.10,
     description: 'Live traffic camera at Friant & Shepherd intersection in Fresno, CA — with police scanner audio.'
   }
 ];
@@ -67,12 +67,21 @@ export async function seedTheaters(db: any): Promise<void> {
     }
   }
 
-  // Insert or update current theaters
-  const existingIds = new Set(existingTheaters.map((t: any) => t.id));
+  // Insert new theaters, update existing ones to match config
+  const existingMap = new Map(existingTheaters.map((t: any) => [t.id, t]));
   for (const theater of DEFAULT_THEATERS) {
-    if (!existingIds.has(theater.id)) {
+    if (!existingMap.has(theater.id)) {
       db.theaters.create(theater);
       console.log(`Seeded theater: ${theater.title}`);
+    } else {
+      // Update price and other fields to match config
+      const existing = existingMap.get(theater.id);
+      if (existing.ticket_price_usdc !== theater.ticket_price_usdc ||
+          existing.title !== theater.title ||
+          existing.stream_url !== theater.stream_url) {
+        db.theaters.update(theater.id, theater);
+        console.log(`Updated theater: ${theater.title}`);
+      }
     }
   }
 }
