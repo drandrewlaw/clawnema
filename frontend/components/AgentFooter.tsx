@@ -15,7 +15,7 @@ export function AgentFooter() {
       {/* Agent ticker */}
       {tickerItems.length > 0 && (
         <footer
-          className="fixed bottom-12 left-0 right-0 bg-zinc-950/95 backdrop-blur-md z-50"
+          className="bg-zinc-950/95 backdrop-blur-md"
           style={{
             borderTop: '1px solid rgba(245, 158, 11, 0.15)',
             boxShadow: '0 -2px 20px rgba(245, 158, 11, 0.05)',
@@ -50,18 +50,32 @@ export function AgentFooter() {
         </footer>
       )}
 
-      {/* Attribution footer */}
-      <footer className="fixed bottom-0 left-0 right-0 bg-zinc-950 border-t border-zinc-800/50 z-50">
-        <div className="mx-auto max-w-6xl px-4 py-2">
-          <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-1 text-xs text-zinc-500">
+      {/* Site footer */}
+      <footer className="bg-zinc-950 border-t border-zinc-800/50 mt-16">
+        <div className="mx-auto max-w-6xl px-4 py-4">
+          {/* Powered by row */}
+          <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-1 text-xs text-zinc-400 mb-3">
             <span>Powered by</span>
-            <a href="https://openclaw.ai/" target="_blank" rel="noopener noreferrer" className="hover:text-cyan-400 transition-colors">OpenClaw</a>
-            <span>•</span>
-            <a href="https://www.machinefi.com/" target="_blank" rel="noopener noreferrer" className="hover:text-amber-400 transition-colors">Trio</a>
-            <span>•</span>
-            <a href="https://docs.cdp.coinbase.com/agentic-wallet/welcome" target="_blank" rel="noopener noreferrer" className="hover:text-blue-400 transition-colors">Coinbase Agentic Wallet</a>
-            <span>•</span>
-            <a href="https://www.circle.com/usdc" target="_blank" rel="noopener noreferrer" className="hover:text-green-400 transition-colors">Circle USDC</a>
+            <a href="https://openclaw.ai/" target="_blank" rel="noopener noreferrer" className="text-red-400 hover:text-red-300 transition-colors">OpenClaw</a>
+            <span className="text-zinc-600">•</span>
+            <a href="https://www.machinefi.com/" target="_blank" rel="noopener noreferrer" className="text-green-400 hover:text-green-300 transition-colors">IoTeX Trio</a>
+            <span className="text-zinc-600">•</span>
+            <a href="https://docs.cdp.coinbase.com/agentic-wallet/welcome" target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:text-blue-400 transition-colors">Coinbase Agentic Wallet</a>
+            <span className="text-zinc-600">•</span>
+            <a href="https://www.circle.com/usdc" target="_blank" rel="noopener noreferrer" className="text-[#2775CA] hover:text-[#3B8ADB] transition-colors">Circle USDC</a>
+          </div>
+          {/* Bottom row */}
+          <div className="border-t border-zinc-800/50 pt-3 flex flex-wrap items-center justify-between gap-y-1 text-[11px]">
+            <div className="flex items-center gap-2">
+              <span className="text-zinc-400">&copy; 2026 clawnema</span>
+              <span className="text-zinc-700">|</span>
+              <span className="text-amber-400">Built for agents, by agents*</span>
+            </div>
+            <div className="flex items-center gap-3 text-zinc-400">
+              <a href="/terms" className="hover:text-zinc-200 transition-colors">Terms</a>
+              <a href="/privacy" className="hover:text-zinc-200 transition-colors">Privacy</a>
+              <span className="text-zinc-500 italic">*with some human help from <a href="https://x.com/dr_andrewlaw" target="_blank" rel="noopener noreferrer" className="text-zinc-400 hover:text-amber-400 transition-colors">@dr_andrewlaw</a></span>
+            </div>
           </div>
         </div>
       </footer>
