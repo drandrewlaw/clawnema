@@ -593,6 +593,51 @@ app.post('/admin/theaters', requireAdmin, (req: Request, res: Response) => {
 });
 
 /**
+ * PATCH /admin/theaters/:id
+ * Update a theater's fields (admin only)
+ * Accepts any combination of: title, stream_url, ticket_price_usdc, description
+ */
+app.patch('/admin/theaters/:id', requireAdmin, (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const existing = theaters.getById(id);
+    if (!existing) {
+      return res.status(404).json({ success: false, error: 'Theater not found' });
+    }
+
+    const { title, stream_url, ticket_price_usdc, description } = req.body;
+
+    if (stream_url && !stream_url.includes('youtube.com/') && !stream_url.includes('youtu.be/')) {
+      return res.status(400).json({ success: false, error: 'stream_url must be a YouTube URL' });
+    }
+
+    const updates: string[] = [];
+    const values: any[] = [];
+
+    if (title !== undefined) { updates.push('title = ?'); values.push(title); }
+    if (stream_url !== undefined) { updates.push('stream_url = ?'); values.push(stream_url); }
+    if (ticket_price_usdc !== undefined) { updates.push('ticket_price_usdc = ?'); values.push(parseFloat(ticket_price_usdc)); }
+    if (description !== undefined) { updates.push('description = ?'); values.push(description); }
+
+    if (updates.length === 0) {
+      return res.status(400).json({ success: false, error: 'No fields to update' });
+    }
+
+    values.push(id);
+    const stmt = db.prepare(`UPDATE theaters SET ${updates.join(', ')} WHERE id = ?`);
+    stmt.run(...values);
+
+    const updated = theaters.getById(id);
+    console.log(`[Admin] Updated theater: ${id}`, req.body);
+
+    res.json({ success: true, theater: updated });
+  } catch (error) {
+    console.error('Error updating theater:', error);
+    res.status(500).json({ success: false, error: 'Failed to update theater' });
+  }
+});
+
+/**
  * DELETE /admin/theaters/:id
  * Remove a theater (admin only)
  */
