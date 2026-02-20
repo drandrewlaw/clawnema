@@ -7,6 +7,12 @@ interface DataPoint {
   value: number;
 }
 
+const barColorMap: Record<string, string> = {
+  'bg-amber-400': '#fbbf24',
+  'bg-cyan-400': '#22d3ee',
+  'bg-green-400': '#4ade80',
+};
+
 interface MiniBarChartProps {
   data: DataPoint[];
   height?: number;
@@ -15,6 +21,7 @@ interface MiniBarChartProps {
 }
 
 export function MiniBarChart({ data, height = 120, barColor = 'bg-amber-400', className = '' }: MiniBarChartProps) {
+  const resolvedColor = barColorMap[barColor] || '#fbbf24';
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
   const maxValue = Math.max(...data.map(d => d.value), 1);
 
@@ -44,10 +51,12 @@ export function MiniBarChart({ data, height = 120, barColor = 'bg-amber-400', cl
                 </div>
               )}
               <div
-                className={`w-full rounded-t-sm ${barColor} transition-all duration-200 min-w-[3px] ${
-                  hoveredIndex === i ? 'opacity-100' : 'opacity-70'
-                }`}
-                style={{ height: `${barHeight}%` }}
+                className="w-full rounded-t-sm transition-all duration-200 min-w-[3px]"
+                style={{
+                  height: `${barHeight}%`,
+                  backgroundColor: resolvedColor,
+                  opacity: hoveredIndex === i ? 1 : 0.7,
+                }}
               />
             </div>
           );
