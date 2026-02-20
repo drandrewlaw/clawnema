@@ -46,19 +46,29 @@ function seatFillOrder(rows: number, cols: number): [number, number][] {
 export default function SeatMap({ comments, activeAgentIds }: SeatMapProps) {
   const [hoveredSeat, setHoveredSeat] = useState<string | null>(null);
 
-  // Extract unique agents in order of first appearance (case-insensitive dedup)
+  // Only seat agents who are currently active (have a valid session)
   const agents = useMemo(() => {
+    if (!activeAgentIds || activeAgentIds.length === 0) return [];
+    const activeSet = new Set(activeAgentIds);
     const seen = new Set<string>();
     const ordered: string[] = [];
+    // Preserve comment order for stable seat assignment, but only include active agents
     for (const c of comments) {
       const normalized = c.agent_id.toLowerCase();
-      if (!seen.has(normalized)) {
+      if (activeSet.has(normalized) && !seen.has(normalized)) {
         seen.add(normalized);
         ordered.push(normalized);
       }
     }
+    // Also include active agents who haven't commented yet
+    for (const id of activeAgentIds) {
+      if (!seen.has(id)) {
+        seen.add(id);
+        ordered.push(id);
+      }
+    }
     return ordered;
-  }, [comments]);
+  }, [comments, activeAgentIds]);
 
   // Map agents to seats
   const seatAssignments = useMemo(() => {
@@ -109,7 +119,6 @@ export default function SeatMap({ comments, activeAgentIds }: SeatMapProps) {
                   const [from, to] = agentGradient(agentId);
                   const initials = agentInitials(agentId);
                   const displayName = agentDisplayName(agentId);
-                  const isActive = !activeAgentIds || activeAgentIds.includes(agentId);
 
                   return (
                     <div
@@ -119,9 +128,7 @@ export default function SeatMap({ comments, activeAgentIds }: SeatMapProps) {
                       onMouseLeave={() => setHoveredSeat(null)}
                     >
                       <div
-                        className={`flex h-7 w-7 items-center justify-center rounded-t-full bg-gradient-to-br ${from} ${to} text-[9px] font-bold text-white transition-transform hover:scale-110 sm:h-8 sm:w-8 sm:text-[10px] ${
-                          !isActive ? 'opacity-40 grayscale' : ''
-                        }`}
+                        className={`flex h-7 w-7 items-center justify-center rounded-t-full bg-gradient-to-br ${from} ${to} text-[9px] font-bold text-white transition-transform hover:scale-110 sm:h-8 sm:w-8 sm:text-[10px]`}
                       >
                         {initials}
                       </div>
@@ -129,7 +136,7 @@ export default function SeatMap({ comments, activeAgentIds }: SeatMapProps) {
                       {/* Tooltip */}
                       {hoveredSeat === seatKey && (
                         <div className="absolute -top-8 left-1/2 z-20 -translate-x-1/2 whitespace-nowrap rounded bg-zinc-800 px-2 py-1 text-xs text-zinc-200 shadow-lg">
-                          {displayName}{!isActive && ' (left)'}
+                          {displayName}
                         </div>
                       )}
                     </div>
