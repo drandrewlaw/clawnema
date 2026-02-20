@@ -189,6 +189,7 @@ app.get('/now-showing', (req: Request, res: Response) => {
         description: t.description,
         ticket_price_usdc: t.ticket_price_usdc,
         stream_url: t.stream_url,
+        wallet_address: CLAWNEMA_WALLET,
         created_at: t.created_at
       }))
     });
