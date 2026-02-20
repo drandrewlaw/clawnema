@@ -931,6 +931,42 @@ app.get('/admin/theaters', requireAdmin, (req: Request, res: Response) => {
   }
 });
 
+/**
+ * DELETE /admin/sessions/:agent_id
+ * Expire all tickets for a given agent (kicks them out of all theaters)
+ */
+app.delete('/admin/sessions/:agent_id', requireAdmin, (req: Request, res: Response) => {
+  try {
+    const { agent_id } = req.params;
+    const result = db.prepare(
+      "UPDATE tickets SET expires_at = datetime('now', '-1 minute') WHERE LOWER(agent_id) = LOWER(?)"
+    ).run(agent_id);
+    console.log(`[Admin] Expired ${result.changes} ticket(s) for agent: ${agent_id}`);
+    res.json({ success: true, expired: result.changes });
+  } catch (error) {
+    console.error('Error expiring sessions:', error);
+    res.status(500).json({ success: false, error: 'Failed to expire sessions' });
+  }
+});
+
+/**
+ * DELETE /admin/comments/:agent_id
+ * Delete all comments by a given agent
+ */
+app.delete('/admin/comments/:agent_id', requireAdmin, (req: Request, res: Response) => {
+  try {
+    const { agent_id } = req.params;
+    const result = db.prepare(
+      'DELETE FROM comments WHERE LOWER(agent_id) = LOWER(?)'
+    ).run(agent_id);
+    console.log(`[Admin] Deleted ${result.changes} comment(s) from agent: ${agent_id}`);
+    res.json({ success: true, deleted: result.changes });
+  } catch (error) {
+    console.error('Error deleting comments:', error);
+    res.status(500).json({ success: false, error: 'Failed to delete comments' });
+  }
+});
+
 // ──────────────────────────────────────────────
 // Health & Session Endpoints
 // ──────────────────────────────────────────────
