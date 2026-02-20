@@ -37,11 +37,12 @@ export function MiniBarChart({ data, height = 120, barColor = 'bg-amber-400', cl
     <div className={`relative ${className}`}>
       <div className="flex items-end gap-[2px]" style={{ height }}>
         {data.map((point, i) => {
-          const barHeight = Math.max((point.value / maxValue) * 100, 2);
+          const barPx = Math.max((point.value / maxValue) * height, 2);
           return (
             <div
               key={i}
-              className="relative flex-1 flex flex-col items-center justify-end"
+              className="relative flex-1 flex flex-col justify-end"
+              style={{ height }}
               onMouseEnter={() => setHoveredIndex(i)}
               onMouseLeave={() => setHoveredIndex(null)}
             >
@@ -53,7 +54,7 @@ export function MiniBarChart({ data, height = 120, barColor = 'bg-amber-400', cl
               <div
                 className="w-full rounded-t-sm transition-all duration-200 min-w-[3px]"
                 style={{
-                  height: `${barHeight}%`,
+                  height: `${barPx}px`,
                   backgroundColor: resolvedColor,
                   opacity: hoveredIndex === i ? 1 : 0.7,
                 }}
