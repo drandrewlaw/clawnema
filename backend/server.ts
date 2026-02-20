@@ -410,9 +410,11 @@ app.post('/buy-ticket', async (req: Request, res: Response) => {
  * - Graceful degradation with fallback responses
  * - Better error messages and logging
  */
-app.get('/watch', async (req: Request, res: Response) => {
+async function handleWatch(req: Request, res: Response) {
   try {
-    const { session_token, theater_id } = req.query;
+    // Accept params from query (GET) or body (POST)
+    const session_token = req.query.session_token || req.body?.session_token;
+    const theater_id = req.query.theater_id || req.body?.theater_id;
 
     if (!session_token || typeof session_token !== 'string') {
       return res.status(400).json({
@@ -486,12 +488,15 @@ app.get('/watch', async (req: Request, res: Response) => {
       success: true,
       scene_description: 'A captivating scene unfolds on screen.',
       timestamp: new Date().toISOString(),
-      theater_id: req.query.theater_id || 'unknown',
+      theater_id: theater_id || 'unknown',
       warning: 'Scene analysis temporarily unavailable',
       rate_limit_seconds: WATCH_RATE_LIMIT_SECONDS
     });
   }
-});
+}
+
+app.get('/watch', handleWatch);
+app.post('/watch', handleWatch);
 
 /**
  * POST /comment
