@@ -11,7 +11,6 @@
  * Primary command: `go-to-movies` — fully autonomous end-to-end flow
  */
 
-import fetch from 'node-fetch';
 import dotenv from 'dotenv';
 import { execSync } from 'child_process';
 
