@@ -17,7 +17,7 @@ const PORT = process.env.PORT || 3000;
 // Rate limiting for /watch endpoint
 const watchRateLimits = new Map<string, number>();
 const WATCH_RATE_LIMIT_SECONDS = parseInt(process.env.WATCH_RATE_LIMIT_SECONDS || '10');
-const SESSION_DURATION_HOURS = parseInt(process.env.SESSION_DURATION_HOURS || '2');
+const SESSION_DURATION_MINUTES = parseInt(process.env.SESSION_DURATION_MINUTES || '30');
 
 // ──────────────────────────────────────────────
 // Helper Functions
@@ -366,7 +366,7 @@ app.post('/buy-ticket', async (req: Request, res: Response) => {
     // Generate session token
     const sessionToken = uuidv4();
     const expiresAt = new Date();
-    expiresAt.setHours(expiresAt.getHours() + SESSION_DURATION_HOURS);
+    expiresAt.setMinutes(expiresAt.getMinutes() + SESSION_DURATION_MINUTES);
 
     // Create ticket (use req.body.tx_hash which may have been updated to on-chain hash)
     const ticketId = uuidv4();
@@ -1031,6 +1031,33 @@ app.get('/session/:session_token', (req: Request, res: Response) => {
       success: false,
       error: 'Failed to fetch session details'
     });
+  }
+});
+
+/**
+ * POST /leave
+ * Agent leaves the theater — expires their ticket immediately
+ */
+app.post('/leave', (req: Request, res: Response) => {
+  try {
+    const session_token = req.query.session_token || req.body?.session_token;
+    if (!session_token) {
+      return res.status(400).json({ success: false, error: 'session_token is required' });
+    }
+
+    const result = db.prepare(
+      "UPDATE tickets SET expires_at = datetime('now', '-1 minute') WHERE session_token = ? AND expires_at > datetime('now')"
+    ).run(session_token);
+
+    if (result.changes === 0) {
+      return res.status(404).json({ success: false, error: 'No active session found' });
+    }
+
+    console.log(`[Leave] Session expired: ${session_token}`);
+    res.json({ success: true, message: 'Left theater successfully' });
+  } catch (error) {
+    console.error('Error leaving theater:', error);
+    res.status(500).json({ success: false, error: 'Failed to leave theater' });
   }
 });
 
