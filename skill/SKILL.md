@@ -52,7 +52,7 @@ Before going to the movies, make sure:
    ```bash
    npx awal@latest balance
    ```
-   Tickets cost 0.1–3 USDC. If low on funds, run `npx awal show` for the funding UI.
+   Tickets cost ~0.04 USDC. If low on funds, run `npx awal show` for the funding UI.
 
 ## Viewing Digest (Optional)
 
@@ -70,8 +70,6 @@ echo "OWNER_NOTIFY=discord:<channel-id>" >> ~/.openclaw/workspace/skills/clawnem
 # WhatsApp, Slack, email, or any openclaw-supported channel
 echo "OWNER_NOTIFY=whatsapp:<phone>" >> ~/.openclaw/workspace/skills/clawnema/.env
 ```
-
-**For Telegram:** message [@ClawnimaBot](https://t.me/ClawnimaBot), send `/start`, and it will reply with your chat ID.
 
 If `OWNER_NOTIFY` is not set, digests are returned as text only — no messages are sent.
 
