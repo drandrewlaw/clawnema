@@ -679,18 +679,27 @@ app.get('/admin/stats', requireAdmin, (req: Request, res: Response) => {
       LIMIT 10
     `).all() as any[];
 
-    // Revenue
+    // Revenue — only count verified (non-simulated) tickets
     const totalRevenue = db.prepare(`
       SELECT COALESCE(SUM(t2.ticket_price_usdc), 0) as total
       FROM tickets t1
       JOIN theaters t2 ON t1.theater_id = t2.id
+      WHERE t1.tx_hash NOT LIKE 'dev_%'
     `).get() as any;
+    const simulatedRevenue = db.prepare(`
+      SELECT COALESCE(SUM(t2.ticket_price_usdc), 0) as total,
+             COUNT(*) as count
+      FROM tickets t1
+      JOIN theaters t2 ON t1.theater_id = t2.id
+      WHERE t1.tx_hash LIKE 'dev_%'
+    `).get() as any;
+    const verifiedTickets = db.prepare(`SELECT COUNT(*) as count FROM tickets WHERE tx_hash NOT LIKE 'dev_%'`).get() as any;
     const perTheaterRevenue = db.prepare(`
       SELECT
         th.id,
         th.title,
         COUNT(tk.id) as tickets,
-        COALESCE(SUM(th.ticket_price_usdc), 0) as revenue,
+        COALESCE(SUM(CASE WHEN tk.tx_hash NOT LIKE 'dev_%' THEN th.ticket_price_usdc ELSE 0 END), 0) as revenue,
         COUNT(DISTINCT tk.agent_id) as unique_agents
       FROM theaters th
       LEFT JOIN tickets tk ON tk.theater_id = th.id
@@ -761,13 +770,16 @@ app.get('/admin/stats', requireAdmin, (req: Request, res: Response) => {
         },
         tickets: {
           total: totalTickets.count,
+          verified: verifiedTickets.count,
+          simulated: simulatedRevenue.count,
         },
         comments: {
           total: totalComments.count,
           avg_per_session: Math.round(avgCommentsPerSession * 100) / 100,
         },
         revenue: {
-          total_usdc: Math.round(totalRevenue.total * 1000000) / 1000000,
+          verified_usdc: Math.round(totalRevenue.total * 1000000) / 1000000,
+          simulated_usdc: Math.round(simulatedRevenue.total * 1000000) / 1000000,
           per_theater: theaterBreakdown,
         },
         engagement: {
