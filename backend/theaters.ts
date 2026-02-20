@@ -59,23 +59,13 @@ export const DEFAULT_THEATERS: Theater[] = [
 ];
 
 /**
- * Initialize theaters in the database
+ * Initialize theaters in the database.
+ * Only adds missing defaults — never deletes admin-added theaters.
  */
 export async function seedTheaters(db: any): Promise<void> {
-  // Clear old theaters and re-seed with current config
-  const currentIds = new Set(DEFAULT_THEATERS.map(t => t.id));
   const existingTheaters = db.theaters.getAll();
-
-  // Remove theaters that are no longer in the config
-  for (const existing of existingTheaters) {
-    if (!currentIds.has(existing.id)) {
-      db.theaters.delete(existing.id);
-      console.log(`Removed old theater: ${existing.id}`);
-    }
-  }
-
-  // Insert new theaters, update existing ones to match config
   const existingMap = new Map(existingTheaters.map((t: any) => [t.id, t]));
+
   for (const theater of DEFAULT_THEATERS) {
     if (!existingMap.has(theater.id)) {
       db.theaters.create(theater);
