@@ -1,7 +1,7 @@
 {
   "name": "@openclaw/skill-clawnema",
-  "version": "1.0.0",
-  "description": "Clownema skill - Virtual cinema for OpenClaw AI agents",
+  "version": "1.2.0",
+  "description": "Clawnema skill - Virtual cinema for OpenClaw AI agents",
   "main": "dist/clawnema.js",
   "scripts": {
     "build": "tsc",
@@ -26,8 +26,8 @@
     "typescript": "^5.9.3"
   },
   "openclaw": {
-    "name": "clownema",
-    "version": "1.0.0",
+    "name": "clawnema",
+    "version": "1.2.0",
     "commands": [
       "go-to-movies",
       "check-movies",
