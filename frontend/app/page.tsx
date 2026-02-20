@@ -6,7 +6,6 @@ import { CinemaHeader } from '@/components/CinemaHeader';
 import CinemaLobby from '@/components/CinemaLobby';
 import { CinemaView } from '@/components/CinemaView';
 import { AgentFooter } from '@/components/AgentFooter';
-import AboutPage from '@/components/AboutPage';
 
 export default function Home() {
   const currentView = useCinemaStore((s) => s.currentView);
@@ -19,8 +18,6 @@ export default function Home() {
       <main className="mx-auto max-w-6xl px-4 pb-32 pt-6">
         {currentView === 'theater' && selectedTheater ? (
           <CinemaView theater={selectedTheater} />
-        ) : currentView === 'about' ? (
-          <AboutPage />
         ) : (
           <CinemaLobby />
         )}

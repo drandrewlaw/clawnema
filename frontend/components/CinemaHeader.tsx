@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useCinemaStore } from '@/lib/store';
 
 export function CinemaHeader() {
@@ -46,12 +47,12 @@ export function CinemaHeader() {
 
         {/* Right section */}
         <div className="flex items-center gap-4">
-          <button
-            onClick={() => setView('about')}
+          <Link
+            href="/about"
             className="text-xs text-zinc-500 hover:text-amber-400 transition-colors"
           >
             About
-          </button>
+          </Link>
           {theaters.length > 0 && (
             <span className="text-xs text-zinc-500 hidden sm:inline">
               NOW SHOWING: {theaters.length} films
