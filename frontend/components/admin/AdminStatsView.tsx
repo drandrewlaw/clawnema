@@ -30,8 +30,8 @@ export function AdminStatsView({ stats }: AdminStatsViewProps) {
       {/* Summary Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <SummaryCard label="Total Agents" value={stats.agents.total} />
-        <SummaryCard label="Total Tickets" value={stats.tickets.total} />
-        <SummaryCard label="Total Revenue" value={`$${stats.revenue.total_usdc.toFixed(2)}`} />
+        <SummaryCard label="Verified Tickets" value={stats.tickets.verified} subtitle={stats.tickets.simulated > 0 ? `${stats.tickets.simulated} simulated` : undefined} />
+        <SummaryCard label="Verified Revenue" value={`$${stats.revenue.verified_usdc.toFixed(2)}`} subtitle={stats.revenue.simulated_usdc > 0 ? `$${stats.revenue.simulated_usdc.toFixed(2)} simulated` : undefined} />
         <SummaryCard label="Total Comments" value={stats.comments.total} />
       </div>
 
@@ -168,12 +168,13 @@ export function AdminStatsView({ stats }: AdminStatsViewProps) {
   );
 }
 
-function SummaryCard({ label, value }: { label: string; value: string | number }) {
+function SummaryCard({ label, value, subtitle }: { label: string; value: string | number; subtitle?: string }) {
   return (
     <Card className="bg-zinc-900 border-zinc-800">
       <CardContent className="pt-4 pb-3 px-4">
         <p className="text-xs text-zinc-500 uppercase tracking-wider">{label}</p>
         <p className="text-2xl font-bold text-amber-400 mt-1">{value}</p>
+        {subtitle && <p className="text-xs text-zinc-500 mt-0.5">{subtitle}</p>}
       </CardContent>
     </Card>
   );

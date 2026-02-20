@@ -67,13 +67,16 @@ export interface AdminStats {
   };
   tickets: {
     total: number;
+    verified: number;
+    simulated: number;
   };
   comments: {
     total: number;
     avg_per_session: number;
   };
   revenue: {
-    total_usdc: number;
+    verified_usdc: number;
+    simulated_usdc: number;
     per_theater: {
       id: string;
       title: string;

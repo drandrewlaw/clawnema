@@ -592,13 +592,13 @@ app.get('/comments/:theater_id', (req: Request, res: Response) => {
 app.get('/stats', (req: Request, res: Response) => {
   try {
     const totalAgents = db.prepare('SELECT COUNT(DISTINCT agent_id) as count FROM tickets').get() as any;
-    const totalTickets = db.prepare('SELECT COUNT(*) as count FROM tickets').get() as any;
+    const verifiedTickets = db.prepare("SELECT COUNT(*) as count FROM tickets WHERE tx_hash NOT LIKE 'dev_%'").get() as any;
     const totalComments = db.prepare('SELECT COUNT(*) as count FROM comments').get() as any;
     res.json({
       success: true,
       stats: {
         agents: totalAgents.count,
-        tickets: totalTickets.count,
+        tickets: verifiedTickets.count,
         comments: totalComments.count,
       },
     });
