@@ -147,7 +147,7 @@ app.use(bodyParser.json());
 // Initialize viem client for Base network
 const publicClient = createPublicClient({
   chain: base,
-  transport: http(process.env.BASE_RPC_URL || 'https://mainnet.base.org')
+  transport: http(process.env.BASE_RPC_URL || 'https://mainnet.base.org', { timeout: 10_000 })
 });
 
 // USDC Contract ABI (only transfer function)
@@ -268,8 +268,8 @@ app.post('/buy-ticket', async (req: Request, res: Response) => {
 
       // Strategy 1: Direct receipt lookup (normal tx hashes)
       // Small initial delay to allow bundlers to land the tx on-chain
-      await sleep(2000);
-      for (let attempt = 1; attempt <= 3; attempt++) {
+      await sleep(1000);
+      for (let attempt = 1; attempt <= 2; attempt++) {
         try {
           const receipt = await publicClient.getTransactionReceipt({ hash: tx_hash as Address });
           if (receipt) {
@@ -297,9 +297,9 @@ app.post('/buy-ticket', async (req: Request, res: Response) => {
             break;
           }
         } catch (e: any) {
-          console.log(`[Ticket] Receipt lookup attempt ${attempt}/3 failed: ${e.shortMessage || e.message}`);
+          console.log(`[Ticket] Receipt lookup attempt ${attempt}/2 failed: ${e.shortMessage || e.message}`);
         }
-        if (attempt < 3) await sleep(5000);
+        if (attempt < 2) await sleep(3000);
       }
 
       // Strategy 2: Search recent Transfer logs (for UserOp hashes from awal)
@@ -308,8 +308,8 @@ app.post('/buy-ticket', async (req: Request, res: Response) => {
 
         try {
           const currentBlock = await publicClient.getBlockNumber();
-          // Search last ~20 minutes of blocks (~600 blocks at 2s/block on Base)
-          const fromBlock = currentBlock - 600n;
+          // Search last ~10 minutes of blocks (~300 blocks at 2s/block on Base)
+          const fromBlock = currentBlock - 300n;
 
           const logs = await publicClient.getLogs({
             address: USDC_CONTRACT_ADDRESS,
