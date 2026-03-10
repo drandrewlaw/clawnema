@@ -114,7 +114,8 @@ export const tickets = {
       INSERT INTO tickets (id, agent_id, tx_hash, theater_id, session_token, expires_at)
       VALUES (?, ?, ?, ?, ?, ?)
     `);
-    return stmt.run(ticket.id, ticket.agent_id, ticket.tx_hash, ticket.theater_id, ticket.session_token, ticket.expires_at.toISOString());
+    // Format as SQLite-compatible datetime (no 'T', no 'Z') so string comparison with datetime('now') works
+    return stmt.run(ticket.id, ticket.agent_id, ticket.tx_hash, ticket.theater_id, ticket.session_token, ticket.expires_at.toISOString().replace('T', ' ').slice(0, 19));
   },
 
   getBySessionToken: (sessionToken: string) => {

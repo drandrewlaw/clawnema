@@ -142,10 +142,14 @@ function sendPayment(amount: number, recipient: string): { txHash: string | null
     // Parse the JSON output to get the tx hash
     const jsonMatch = sendOutput.match(/\{[\s\S]*\}/);
     if (jsonMatch) {
-      const result = JSON.parse(jsonMatch[0]);
-      const txHash = result.transactionHash || result.tx_hash || result.hash;
-      if (txHash) {
-        return { txHash, error: null };
+      try {
+        const result = JSON.parse(jsonMatch[0]);
+        const txHash = result.transactionHash || result.tx_hash || result.hash;
+        if (txHash) {
+          return { txHash, error: null };
+        }
+      } catch {
+        // Malformed JSON — fall through to regex fallback
       }
     }
 

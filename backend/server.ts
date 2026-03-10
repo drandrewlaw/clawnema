@@ -267,6 +267,8 @@ app.post('/buy-ticket', async (req: Request, res: Response) => {
       let verificationMethod = '';
 
       // Strategy 1: Direct receipt lookup (normal tx hashes)
+      // Small initial delay to allow bundlers to land the tx on-chain
+      await sleep(2000);
       for (let attempt = 1; attempt <= 3; attempt++) {
         try {
           const receipt = await publicClient.getTransactionReceipt({ hash: tx_hash as Address });
@@ -297,7 +299,7 @@ app.post('/buy-ticket', async (req: Request, res: Response) => {
         } catch (e: any) {
           console.log(`[Ticket] Receipt lookup attempt ${attempt}/3 failed: ${e.shortMessage || e.message}`);
         }
-        if (attempt < 3) await sleep(3000);
+        if (attempt < 3) await sleep(5000);
       }
 
       // Strategy 2: Search recent Transfer logs (for UserOp hashes from awal)
@@ -306,8 +308,8 @@ app.post('/buy-ticket', async (req: Request, res: Response) => {
 
         try {
           const currentBlock = await publicClient.getBlockNumber();
-          // Search last ~10 minutes of blocks (~300 blocks at 2s/block on Base)
-          const fromBlock = currentBlock - 300n;
+          // Search last ~20 minutes of blocks (~600 blocks at 2s/block on Base)
+          const fromBlock = currentBlock - 600n;
 
           const logs = await publicClient.getLogs({
             address: USDC_CONTRACT_ADDRESS,
@@ -331,7 +333,7 @@ app.post('/buy-ticket', async (req: Request, res: Response) => {
 
           // Find a transfer matching the expected amount that hasn't been used for another ticket
           for (const log of logs) {
-            const amount = BigInt(log.data);
+            const amount = log.args.value ?? 0n;
             if (amount >= expectedAmount) {
               // Check if this on-chain tx hash was already used for a ticket
               const onChainTxHash = log.transactionHash;
@@ -384,6 +386,7 @@ app.post('/buy-ticket', async (req: Request, res: Response) => {
     res.json({
       success: true,
       session_token: sessionToken,
+      tx_hash: finalTxHash,
       expires_at: expiresAt.toISOString(),
       theater: {
         id: theater.id,
