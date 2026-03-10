@@ -147,7 +147,7 @@ app.use(bodyParser.json());
 // Initialize viem client for Base network
 const publicClient = createPublicClient({
   chain: base,
-  transport: http(process.env.BASE_RPC_URL || 'https://mainnet.base.org', { timeout: 10_000 })
+  transport: http(process.env.BASE_RPC_URL || 'https://base-rpc.publicnode.com', { timeout: 10_000 })
 });
 
 // USDC Contract ABI (only transfer function)
